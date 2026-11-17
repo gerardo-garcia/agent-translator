@@ -1,0 +1,106 @@
+# SYNTHETIC fixture (written for agent-translator tests, not an official AWS sample).
+# Covers what the official samples do not: a supervisor and collaborators defined in the same
+# template, SUPERVISOR_ROUTER, memory, a literal knowledge base id, a literal Lambda ARN,
+# RequireConfirmation and RETURN_CONTROL.
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Synthetic supervisor with two in-template collaborators.
+Parameters:
+  ModelId:
+    Type: String
+    Default: anthropic.claude-3-5-sonnet-20241022-v2:0
+  RoleArn:
+    Type: String
+Resources:
+  Supervisor:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: support-supervisor
+      AgentResourceRoleArn: !Ref RoleArn
+      FoundationModel: !Ref ModelId
+      Instruction: You route customer questions to the billing or the orders specialist and merge their answers.
+      AgentCollaboration: SUPERVISOR_ROUTER
+      AgentCollaborators:
+        - CollaboratorName: billing
+          CollaborationInstruction: Ask billing about invoices, refunds and payment problems.
+          RelayConversationHistory: TO_COLLABORATOR
+          AgentDescriptor:
+            AliasArn: !GetAtt BillingAlias.AgentAliasArn
+        - CollaboratorName: orders
+          CollaborationInstruction: Ask orders about shipping status and returns.
+          AgentDescriptor:
+            AliasArn: !GetAtt OrdersAlias.AgentAliasArn
+      MemoryConfiguration:
+        EnabledMemoryTypes: [SESSION_SUMMARY]
+        StorageDays: 14
+        SessionSummaryConfiguration:
+          MaxRecentSessions: 3
+      IdleSessionTTLInSeconds: 600
+  SupervisorAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !GetAtt Supervisor.AgentId
+      AgentAliasName: prod
+  Billing:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: billing-specialist
+      AgentResourceRoleArn: !Ref RoleArn
+      FoundationModel: !Ref ModelId
+      Instruction: You answer billing questions using the invoice tools and the finance knowledge base.
+      KnowledgeBases:
+        - KnowledgeBaseId: ABCDE12345
+          Description: Finance policies and refund rules.
+      ActionGroups:
+        - ActionGroupName: invoice-tools
+          Description: Look up and refund invoices.
+          ActionGroupExecutor:
+            Lambda: arn:aws:lambda:eu-west-1:123456789012:function:invoice-tools
+          FunctionSchema:
+            Functions:
+              - Name: get_invoice
+                Description: Fetch an invoice by id.
+                Parameters:
+                  invoice_id:
+                    Type: string
+                    Description: Invoice identifier.
+                    Required: true
+              - Name: refund_invoice
+                Description: Refund an invoice (needs confirmation).
+                RequireConfirmation: ENABLED
+                Parameters:
+                  invoice_id:
+                    Type: string
+                    Required: true
+                  amount:
+                    Type: number
+                    Description: Amount to refund.
+  BillingAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref Billing
+      AgentAliasName: prod
+  Orders:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: orders-specialist
+      AgentResourceRoleArn: !Ref RoleArn
+      FoundationModel: !Ref ModelId
+      Instruction: You answer questions about order shipping and returns and return control to the app for lookups.
+      ActionGroups:
+        - ActionGroupName: lookup-order
+          Description: Order lookup performed by the calling application.
+          ActionGroupExecutor:
+            CustomControl: RETURN_CONTROL
+          FunctionSchema:
+            Functions:
+              - Name: lookup_order
+                Description: Find an order by id.
+                Parameters:
+                  order_id:
+                    Type: string
+                    Required: true
+  OrdersAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !GetAtt Orders.AgentId
+      AgentAliasName: prod

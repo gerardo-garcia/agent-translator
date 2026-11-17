@@ -1,0 +1,86 @@
+# SYNTHETIC fixture (written for agent-translator tests, not an official Microsoft sample).
+# Covers what the official samples do not: two prompt agents in one file, an inline OpenAPI tool,
+# file_search, A2A, code_interpreter, MCP with approval and an allowed-tools list.
+name: support-team
+services:
+  ai-project:
+    host: azure.ai.project
+    deployments:
+      - name: gpt-4.1
+        model:
+          format: OpenAI
+          name: gpt-4.1
+          version: '2025-04-14'
+        sku:
+          name: GlobalStandard
+          capacity: 20
+  triage:
+    host: azure.ai.agent
+    project: .
+    uses:
+      - ai-project
+    kind: prompt
+    name: triage
+    description: Routes support requests.
+    model: gpt-4.1
+    temperature: 0.2
+    top_p: 0.9
+    instructions: |
+      You triage support requests.
+      Escalate billing questions to the billing agent.
+    tools:
+      - type: a2a
+        base_url: https://billing.example.com/a2a
+        a2a_version: '1.0'
+      - type: mcp
+        server_label: tickets
+        server_url: https://tickets.example.com/mcp
+        require_approval: always
+        allowed_tools:
+          - search_tickets
+          - close_ticket
+  billing:
+    host: azure.ai.agent
+    project: .
+    uses:
+      - ai-project
+    kind: prompt
+    name: billing
+    description: Answers billing questions.
+    model: gpt-4.1
+    instructions: You answer billing questions using the invoice API and the finance documents.
+    tools:
+      - type: openapi
+        openapi:
+          name: invoices
+          description: Invoice lookup API.
+          auth:
+            type: anonymous
+          spec:
+            openapi: 3.0.0
+            info:
+              title: Invoices
+              version: '1.0'
+            servers:
+              - url: https://invoices.example.com
+            paths:
+              /invoices/{id}:
+                get:
+                  operationId: getInvoice
+                  summary: Fetch an invoice
+                  parameters:
+                    - name: id
+                      in: path
+                      required: true
+                      schema:
+                        type: string
+                  responses:
+                    '200':
+                      description: The invoice
+      - type: file_search
+        vector_store_ids:
+          - vs_finance_docs
+        max_num_results: 5
+      - type: code_interpreter
+infra:
+  provider: microsoft.foundry

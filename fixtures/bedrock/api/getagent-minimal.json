@@ -1,0 +1,36 @@
+{
+    "agent": {
+        "agentId": "ABCDE12345",
+        "agentName": "support-bot",
+        "agentArn": "arn:aws:bedrock:us-east-1:123456789012:agent/ABCDE12345",
+        "agentVersion": "DRAFT",
+        "clientToken": "98765432-1098-7654-3210-987654321098",
+        "instruction": "You are a customer support assistant for Example Corp. Answer questions politely and escalate billing disputes to a human.",
+        "agentStatus": "PREPARED",
+        "foundationModel": "anthropic.claude-3-haiku-20240307-v1:0",
+        "description": "Answers customer questions",
+        "idleSessionTTLInSeconds": 600,
+        "agentResourceRoleArn": "arn:aws:iam::123456789012:role/service-role/AmazonBedrockExecutionRoleForAgents_support",
+        "createdAt": "2025-03-04T10:11:12.345678+00:00",
+        "updatedAt": "2025-03-05T08:00:00.000000+00:00",
+        "preparedAt": "2025-03-05T08:00:01.000000+00:00",
+        "promptOverrideConfiguration": {
+            "promptConfigurations": [
+                {
+                    "promptType": "ORCHESTRATION",
+                    "promptCreationMode": "OVERRIDDEN",
+                    "promptState": "ENABLED",
+                    "basePromptTemplate": "{\"anthropic_version\":\"bedrock-2023-05-31\",\"system\":\"$instruction$\",\"messages\":[]}",
+                    "inferenceConfiguration": {"temperature": 0.0, "topP": 1.0, "topK": 250, "maximumLength": 2048, "stopSequences": ["</invoke>"]},
+                    "parserMode": "DEFAULT"
+                }
+            ]
+        },
+        "guardrailConfiguration": {"guardrailIdentifier": "gr1234abcd", "guardrailVersion": "1"},
+        "memoryConfiguration": {
+            "enabledMemoryTypes": ["SESSION_SUMMARY"],
+            "storageDays": 30,
+            "sessionSummaryConfiguration": {"maxRecentSessions": 5}
+        }
+    }
+}

@@ -1,0 +1,8 @@
+# SYNTHETIC fixture (written for agent-translator tests, not an official Google sample).
+# A workflow agent (ParallelAgent) whose sub-agents each have their own tools.
+agent_class: ParallelAgent
+name: research_team
+description: Runs the news and the papers researchers at the same time.
+sub_agents:
+  - config_path: news_agent.yaml
+  - config_path: papers_agent.yaml

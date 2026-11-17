@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shared-config
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-a
+  labels:
+    platform.example.com/shared-tools: "true"
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: ModelConfig
+metadata:
+  name: shared-model
+  namespace: shared-config
+spec:
+  provider: OpenAI
+  model: example-model
+  apiKeySecret: model-auth
+  apiKeySecretKey: token
+  allowedNamespaces:
+    from: All
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: RemoteMCPServer
+metadata:
+  name: shared-tools
+  namespace: shared-config
+spec:
+  description: Shared tools for authorized namespaces
+  url: https://tools.example.com/mcp
+  protocol: STREAMABLE_HTTP
+  allowedNamespaces:
+    from: Selector
+    selector:
+      matchLabels:
+        platform.example.com/shared-tools: "true"
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: AgentTemplate
+metadata:
+  name: assistant
+  namespace: team-a
+spec:
+  modelConfig:
+    name: shared-model
+    namespace: shared-config
+  systemPrompt: Help the user using the available tools.
+  tools:
+    - mcp:
+        server:
+          kind: RemoteMCPServer
+          name: shared-tools
+          namespace: shared-config
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: assistant
+  namespace: team-a
+spec:
+  harnessRef:
+    name: runner
+  template:
+    ref:
+      name: assistant

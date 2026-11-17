@@ -1,0 +1,33 @@
+# SYNTHETIC fixture (written for agent-translator tests, not an official Google sample).
+# Covers what the official samples do not: remote MCP servers (streamable HTTP and SSE) with a
+# tool filter, a knowledge tool, a long-running tool and a generation config.
+agent_class: LlmAgent
+name: support_agent
+model: gemini-2.5-flash
+description: Answers support questions using internal documentation and ticket tools.
+instruction: |
+  You are a support agent. Search the documentation first and use the ticket tools only
+  when the user asks to look up or close a ticket.
+generate_content_config:
+  temperature: 0.2
+  top_p: 0.9
+  max_output_tokens: 1024
+tools:
+  - name: McpToolset
+    args:
+      streamable_http_connection_params:
+        url: https://tickets.example.com/mcp
+      tool_filter:
+        - search_tickets
+        - close_ticket
+  - name: McpToolset
+    args:
+      sse_connection_params:
+        url: https://docs.example.com/sse
+  - name: VertexAiSearchTool
+    args:
+      data_store_id: projects/my-project/locations/global/collections/default_collection/dataStores/support-docs
+  - name: LongRunningFunctionTool
+    args:
+      func: remote_tools.tools.ask_manager
+  - name: google_search

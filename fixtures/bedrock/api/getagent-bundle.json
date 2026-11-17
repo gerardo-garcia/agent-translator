@@ -1,0 +1,87 @@
+{
+    "agent": {
+        "agentId": "FGHIJ67890",
+        "agentName": "travel-planner",
+        "agentArn": "arn:aws:bedrock:us-east-1:123456789012:agent/FGHIJ67890",
+        "agentVersion": "DRAFT",
+        "instruction": "Plan trips: look up flights with the flight tools, check the policy knowledge base and delegate hotel questions to the hotel specialist.",
+        "agentStatus": "PREPARED",
+        "foundationModel": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "idleSessionTTLInSeconds": 1800,
+        "agentResourceRoleArn": "arn:aws:iam::123456789012:role/AmazonBedrockExecutionRoleForAgents_travel",
+        "agentCollaboration": "SUPERVISOR",
+        "createdAt": "2025-06-01T09:00:00+00:00",
+        "updatedAt": "2025-06-02T09:00:00+00:00"
+    },
+    "agentActionGroups": [
+        {
+            "agentId": "FGHIJ67890",
+            "agentVersion": "DRAFT",
+            "actionGroupId": "AG00000001",
+            "actionGroupName": "flights",
+            "description": "Flight search and booking",
+            "actionGroupState": "ENABLED",
+            "actionGroupExecutor": {"lambda": "arn:aws:lambda:us-east-1:123456789012:function:flights"},
+            "apiSchema": {"payload": "{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Flights\",\"version\":\"1.0\"},\"paths\":{\"/flights\":{\"get\":{\"operationId\":\"searchFlights\",\"description\":\"Search flights\",\"parameters\":[{\"name\":\"origin\",\"in\":\"query\",\"required\":true,\"schema\":{\"type\":\"string\"}}],\"responses\":{\"200\":{\"description\":\"ok\"}}}}}}"},
+            "createdAt": "2025-06-01T09:00:00+00:00",
+            "updatedAt": "2025-06-01T09:00:00+00:00"
+        },
+        {
+            "agentId": "FGHIJ67890",
+            "agentVersion": "DRAFT",
+            "actionGroupId": "AG00000002",
+            "actionGroupName": "booking",
+            "actionGroupState": "ENABLED",
+            "actionGroupExecutor": {"lambda": "arn:aws:lambda:us-east-1:123456789012:function:booking"},
+            "functionSchema": {
+                "functions": [
+                    {
+                        "name": "bookFlight",
+                        "description": "Book a flight",
+                        "parameters": {
+                            "flightId": {"type": "string", "description": "Flight id", "required": true},
+                            "seats": {"type": "integer", "description": "Seats", "required": false}
+                        },
+                        "requireConfirmation": "ENABLED"
+                    }
+                ]
+            },
+            "createdAt": "2025-06-01T09:00:00+00:00",
+            "updatedAt": "2025-06-01T09:00:00+00:00"
+        },
+        {
+            "agentId": "FGHIJ67890",
+            "agentVersion": "DRAFT",
+            "actionGroupId": "AG00000003",
+            "actionGroupName": "UserInputAction",
+            "actionGroupState": "ENABLED",
+            "parentActionSignature": "AMAZON.UserInput",
+            "createdAt": "2025-06-01T09:00:00+00:00",
+            "updatedAt": "2025-06-01T09:00:00+00:00"
+        }
+    ],
+    "agentKnowledgeBases": [
+        {
+            "agentId": "FGHIJ67890",
+            "agentVersion": "DRAFT",
+            "knowledgeBaseId": "KB12345678",
+            "description": "Travel policy documents",
+            "knowledgeBaseState": "ENABLED",
+            "createdAt": "2025-06-01T09:00:00+00:00",
+            "updatedAt": "2025-06-01T09:00:00+00:00"
+        }
+    ],
+    "agentCollaborators": [
+        {
+            "agentId": "FGHIJ67890",
+            "agentVersion": "DRAFT",
+            "agentDescriptor": {"aliasArn": "arn:aws:bedrock:us-east-1:123456789012:agent-alias/KLMNO11111/TSTALIASID"},
+            "collaboratorId": "CO00000001",
+            "collaborationInstruction": "Ask the hotel specialist for anything about hotels and accommodation.",
+            "collaboratorName": "hotel-specialist",
+            "relayConversationHistory": "TO_COLLABORATOR",
+            "createdAt": "2025-06-01T09:00:00+00:00",
+            "lastUpdatedAt": "2025-06-01T09:00:00+00:00"
+        }
+    ]
+}

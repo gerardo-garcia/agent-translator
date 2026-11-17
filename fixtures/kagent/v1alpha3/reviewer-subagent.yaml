@@ -1,0 +1,34 @@
+# SYNTHETIC: assembled from the official `tools[].subAgent` snippet in
+# docs/architecture/a2a-subagents.md, completed into a full manifest by hand.
+apiVersion: api.kagent.dev/v1alpha3
+kind: AgentTemplate
+metadata:
+  name: review-context
+  namespace: kagent
+spec:
+  description: Reviews proposed changes.
+  modelConfig:
+    name: default-model-config
+  systemPrompt: |
+    You review proposed changes and point out risks. Do not apply changes.
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: developer
+  namespace: kagent
+spec:
+  harnessRef:
+    name: kagent-default
+  template:
+    inline:
+      description: Writes code and asks a reviewer before applying it.
+      modelConfig:
+        name: default-model-config
+      systemPrompt: You write code. Ask the reviewer sub-agent before applying changes.
+      tools:
+        - subAgent:
+            name: reviewer
+            description: Review proposed changes before applying them.
+            templateRef:
+              name: review-context

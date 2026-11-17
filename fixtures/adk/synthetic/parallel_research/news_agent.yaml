@@ -1,0 +1,9 @@
+# SYNTHETIC fixture (see root_agent.yaml).
+agent_class: LlmAgent
+name: news_researcher
+model: gemini-2.5-flash
+description: Finds recent news about a topic.
+instruction: Search the web for the latest news about the topic in {topic} and summarise the findings.
+output_key: news
+tools:
+  - name: google_search

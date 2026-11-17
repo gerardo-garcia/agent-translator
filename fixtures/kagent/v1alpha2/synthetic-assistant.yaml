@@ -1,0 +1,68 @@
+# SYNTHETIC: hand-written to conform to the v0.10.6 CRDs (the official
+# examples/modelconfig-with-tls.yaml is out of date w.r.t. the CRD and cannot be used).
+# Covers: ModelConfig with params, RemoteMCPServer, per-tool requireApproval,
+# memory, an `Agent` tool whose target is not in the file, and a BYO agent.
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: claude-config
+  namespace: kagent
+spec:
+  provider: Anthropic
+  model: claude-sonnet-4-5
+  apiKeySecret: anthropic-key
+  apiKeySecretKey: ANTHROPIC_API_KEY
+  anthropic:
+    temperature: "0.3"
+    maxTokens: 2048
+---
+apiVersion: kagent.dev/v1alpha2
+kind: RemoteMCPServer
+metadata:
+  name: ticket-tools
+  namespace: kagent
+spec:
+  description: Ticketing tools
+  url: https://tickets.example.com/mcp
+  protocol: STREAMABLE_HTTP
+  timeout: 30s
+---
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: support-assistant
+  namespace: kagent
+spec:
+  description: Handles support tickets.
+  type: Declarative
+  declarative:
+    modelConfig: claude-config
+    systemMessage: |
+      You triage support tickets.
+      Escalate anything involving data loss.
+    memory:
+      modelConfig: embedding-config
+      ttlDays: 30
+    tools:
+      - type: McpServer
+        mcpServer:
+          name: ticket-tools
+          kind: RemoteMCPServer
+          apiGroup: kagent.dev
+          toolNames: [search_tickets, close_ticket]
+          requireApproval: [close_ticket]
+      - type: Agent
+        agent:
+          name: billing-agent
+---
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: custom-runner
+  namespace: kagent
+spec:
+  description: User-provided container.
+  type: BYO
+  byo:
+    deployment:
+      image: example.com/custom-agent:1.0

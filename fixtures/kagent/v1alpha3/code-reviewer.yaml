@@ -1,0 +1,23 @@
+apiVersion: api.kagent.dev/v1alpha3
+kind: EgressPolicy
+metadata:
+  name: node-dependencies
+  namespace: team-a
+spec:
+  destinations:
+    - origin: https://registry.npmjs.org
+    - origin: https://nodejs.org
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: code-reviewer
+  namespace: team-a
+spec:
+  template:
+    ref:
+      name: code-review
+  harnessRef:
+    name: codex
+  egressPolicyRefs:
+    - name: node-dependencies

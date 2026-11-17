@@ -1,0 +1,13 @@
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: assistant
+  namespace: kagent
+spec:
+  template:
+    inline:
+      modelConfig:
+        name: default-model-config
+      systemPrompt: You are a helpful assistant.
+  harnessRef:
+    name: kagent-default

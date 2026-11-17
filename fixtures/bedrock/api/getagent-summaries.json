@@ -1,0 +1,24 @@
+{
+    "agent": {
+        "agentId": "PQRST22222",
+        "agentName": "summary-only",
+        "agentArn": "arn:aws:bedrock:us-east-1:123456789012:agent/PQRST22222",
+        "agentVersion": "DRAFT",
+        "instruction": "Help with whatever the tools allow; this agent was exported with List calls only.",
+        "agentStatus": "NOT_PREPARED",
+        "foundationModel": "amazon.nova-lite-v1:0",
+        "idleSessionTTLInSeconds": 300,
+        "agentResourceRoleArn": "arn:aws:iam::123456789012:role/AmazonBedrockExecutionRoleForAgents_x",
+        "createdAt": "2025-06-01T09:00:00+00:00",
+        "updatedAt": "2025-06-01T09:00:00+00:00",
+        "failureReasons": ["Role cannot be assumed"]
+    },
+    "actionGroupSummaries": [
+        {"actionGroupId": "AG1", "actionGroupName": "orders", "actionGroupState": "ENABLED",
+         "description": "Order lookup", "updatedAt": "2025-06-01T09:00:00+00:00"}
+    ],
+    "agentKnowledgeBaseSummaries": [
+        {"knowledgeBaseId": "KB99999999", "knowledgeBaseState": "ENABLED",
+         "description": "FAQ", "updatedAt": "2025-06-01T09:00:00+00:00"}
+    ]
+}

@@ -1,0 +1,46 @@
+# SYNTHETIC fixture (written for agent-translator tests, not an official Microsoft sample).
+# Agent Framework declarative agent with several functions, an MCP tool with approval and
+# built-in tools.
+kind: Prompt
+name: ResearchAgent
+displayName: Research Agent
+description: Researches a topic and files tickets.
+instructions: |-
+  You research topics on the web and file a ticket when asked.
+model:
+  id: gpt-4.1-mini
+  provider: AzureOpenAI
+  apiType: Responses
+  options:
+    temperature: 0.3
+    topP: 0.8
+    maxOutputTokens: 800
+    seed: 7
+tools:
+  - kind: function
+    name: file_ticket
+    description: Create a support ticket.
+    bindings:
+      file_ticket: file_ticket
+    parameters:
+      properties:
+        title:
+          type: string
+          description: Ticket title.
+          required: true
+        priority:
+          type: string
+          enum: [low, high]
+          required: false
+  - kind: mcp
+    name: tickets
+    description: Ticket system.
+    url: https://tickets.example.com/mcp
+    approvalMode:
+      kind: always
+    allowedTools:
+      - search_tickets
+  - kind: web_search
+    name: web
+  - kind: code_interpreter
+    name: python

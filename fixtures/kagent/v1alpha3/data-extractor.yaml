@@ -1,0 +1,34 @@
+apiVersion: api.kagent.dev/v1alpha3
+kind: Harness
+metadata:
+  name: kagent
+  namespace: kagent
+spec:
+  kagent: {}
+  substrate:
+    workerPoolRef:
+      name: kagent-default
+    snapshotPolicy:
+      location: s3://snapshots/kagent/
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: data-extractor
+  namespace: kagent
+spec:
+  template:
+    inline:
+      modelConfig:
+        name: default-model-config
+      outputSchema:
+        type: object
+        properties:
+          status:
+            type: string
+          payload:
+            type: object
+        required: [status, payload]
+        additionalProperties: false
+  harnessRef:
+    name: kagent

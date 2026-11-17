@@ -1,0 +1,12 @@
+# SYNTHETIC fixture (see root_agent.yaml).
+agent_class: LlmAgent
+name: papers_researcher
+model: gemini-2.5-flash
+description: Finds academic papers about a topic.
+instruction: Find and summarise recent academic papers about the topic in {topic}.
+output_key: papers
+tools:
+  - name: McpToolset
+    args:
+      streamable_http_connection_params:
+        url: https://papers.example.com/mcp
