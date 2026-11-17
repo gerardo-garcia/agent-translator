@@ -23,11 +23,20 @@ def _is_kagent(d: dict) -> bool:
     return str(d.get("apiVersion", "")).split("/")[0] in c.KAGENT_GROUPS
 
 
+def _resolve(path: Path) -> Path:
+    """A directory (as written by `fetch kagent`) stands for its single YAML file."""
+    if not path.is_dir():
+        return path
+    files = sorted(f for f in path.iterdir() if f.suffix in (".yaml", ".yml"))
+    return files[0] if len(files) == 1 else path
+
+
 class KagentAdapter:
     name = "kagent"
     versions = tuple(_CODECS)
 
     def detect(self, path: Path) -> bool:
+        path = _resolve(path)
         if path.suffix not in (".yaml", ".yml"):
             return False
         try:
@@ -38,6 +47,10 @@ class KagentAdapter:
 
     def parse(self, path: Path) -> tuple[AgentIR, Report]:
         rep = Report(source=self.name)
+        path = _resolve(path)
+        if path.is_dir():
+            rep.add(Severity.error, "bad-input", str(path), "expected one YAML file or a directory with exactly one")
+            return AgentIR(agents=[], resources=Resources(mcp_servers=[])), rep
         docs = [d for d in c.yaml_safe().load_all(path.read_text()) if isinstance(d, dict)]
         by_version: dict[str, dict[str, dict[tuple[str, str], dict]]] = {}
         ignored: set[str] = set()

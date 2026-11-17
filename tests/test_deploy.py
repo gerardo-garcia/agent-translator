@@ -272,7 +272,7 @@ def test_cli_apply_yes_creates_and_prints_undo(tmp_path, monkeypatch):
     k = Kubectl()
     monkeypatch.setattr(dkagent, "_run", k)
     r = runner.invoke(cli.app, ["deploy", "kagent", str(f), "--apply", "--yes", "-O", "context=lab"])
-    assert r.exit_code == 0 and len(k.calls) == 2 and "to remove it: kubectl delete" in r.output
+    assert r.exit_code == 0 and len(k.calls) == 2 and "to remove it: kubectl --context lab delete" in r.output
 
 
 def test_cli_plan_error_exits_1_and_changes_nothing(tmp_path, monkeypatch):
@@ -285,3 +285,12 @@ def test_cli_plan_error_exits_1_and_changes_nothing(tmp_path, monkeypatch):
 def test_cli_unknown_platform():
     r = runner.invoke(cli.app, ["deploy", "nope", "x"])
     assert r.exit_code != 0
+
+
+def test_kagent_undo_carries_context_and_namespace(tmp_path):
+    """Found in the real mccluster test: the undo hint omitted the namespace."""
+    f = tmp_path / "k.yaml"
+    f.write_text("apiVersion: kagent.dev/v1alpha2\nkind: Agent\nmetadata: {name: a}\n"
+                 "spec: {type: Declarative, declarative: {modelConfig: m, systemMessage: hi}}\n")
+    pl, _ = dkagent.plan(f, {"namespace": "agtr-test", "context": "lab"}, client=lambda *a: (0, "", ""))
+    assert pl.undo == "kubectl --context lab -n agtr-test delete agent a"

@@ -254,9 +254,9 @@ agent-translator deploy bedrock out/ -O region=eu-west-1 -O model=<model-id> -O 
   `ValidateTemplate`, `iam:PassRole` for the agent role, and the `bedrock:*` actions CloudFormation
   performs for the resources in the template.
 
-Verification status: `deploy azure` was run once against a real, disposable Foundry project (create, duplicate
-refusal, new version, read back with `fetch`, cleanup). **`deploy bedrock` and `deploy kagent` have only been tested
-against fakes**, so try them on a throwaway target first. Details in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+Verification status: `deploy azure` and `deploy kagent` were each run once against a real environment (a disposable
+Foundry project and a lab K3s cluster: create, duplicate refusal, read back with `fetch`, cleanup). **`deploy bedrock`
+has only been tested against fakes**, so try it on a throwaway target first. Details in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Development
 

@@ -276,3 +276,21 @@ def test_azure_translate_accepts_fetch_output_directory(tmp_path):
     (d / "b.json").write_text("{}")
     ir, rep = ad.parse(d)
     assert any(i.code == "bad-input" for i in rep.items)
+
+
+def test_kagent_translate_accepts_fetch_output_directory(tmp_path):
+    """Found in the real mccluster test: `translate` on the directory `fetch kagent` writes."""
+    from agent_translator.registry import detect_adapter, load_adapters
+    from agent_translator.report import Severity
+
+    out = tmp_path / "fetched"
+    out.mkdir()
+    (out / "a.yaml").write_text(
+        "apiVersion: kagent.dev/v1alpha2\nkind: Agent\nmetadata: {name: a}\n"
+        "spec: {type: Declarative, declarative: {modelConfig: m, systemMessage: hi}}\n"
+        "---\napiVersion: kagent.dev/v1alpha2\nkind: ModelConfig\nmetadata: {name: m}\n"
+        "spec: {provider: OpenAI, model: gpt-4.1-mini, apiKeySecret: s, apiKeySecretKey: k}\n")
+    adapters = load_adapters()
+    assert detect_adapter(out, adapters).name == "kagent"
+    ir, rep = adapters["kagent"].parse(out)
+    assert [a.id for a in ir.agents] == ["a"] and rep.worst < Severity.error

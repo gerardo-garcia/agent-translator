@@ -8,8 +8,23 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 |----------|-------|--------|
 | Azure Foundry | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
 | AWS Bedrock | fakes only | fakes only |
-| Kagent | fakes only | fakes only |
+| Kagent | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
 | GCP ADK | not implemented (no fetcher) | not implemented |
+
+## Real test: `fetch kagent` and `deploy kagent` (2026-11-17)
+
+- Cluster: a single-node K3s lab cluster (v1.29) with kagent CRDs at `v1alpha2` (served and storage) and 16 existing agents in the `kagent` namespace. Access through a temporary kubeconfig (deleted afterwards).
+- `fetch kagent` on an existing agent (`promql-agent`, read-only): wrote the Agent plus its ModelConfig, with no Secret, status or managedFields; the Secret appears only by name. `translate` to Azure and back to Kagent worked.
+- `deploy kagent` into a new namespace `agtr-test` (the 16 existing agents were not touched; their count was unchanged afterwards):
+  - `-O check=remote` (`--dry-run=server`): the real API server accepted ModelConfig, RemoteMCPServer and Agent.
+  - `--apply --yes` created the three objects; the kagent controller set the Agent `ACCEPTED=True`, `READY=False` (the pod stays in `CreateContainerConfigError` until the model API key Secret exists, as the `secret-required` report item says; this tool never creates Secrets).
+  - A second apply was refused by the server (`AlreadyExists`) and nothing was overwritten.
+  - `fetch kagent agtr-test/prompt-agent-mcp-tools` read it back; the round trip differs from the emitted file only in namespace, key order and two server defaults (`terminateOnClose`, `runtime: python`).
+- Bugs found and fixed:
+  - `translate` on the directory written by `fetch kagent` failed with "could not autodetect format" (same class as the Azure one); the Kagent adapter now resolves a directory with a single YAML file.
+  - The undo hint omitted `--context` and `-n`, so it would have targeted the wrong namespace; it now carries both.
+- Cleanup: the namespace was deleted (which removed every object in it). Cost: none.
+- Not covered: v1alpha3 (this cluster only has v1alpha2), `AgentTemplate`, Secrets, a multi-object failure part-way (a later object failing after earlier ones were created is reported but not rolled back).
 
 ## GCP / ADK (2026-11-17)
 
@@ -46,17 +61,15 @@ No cloud call was made; ADK has no fetcher or deployer. The emitted ADK projects
 ## Tested with fakes only
 
 - `fetch bedrock`: `Get*/List*` calls, checked with `Stubber` (un-queued calls are rejected).
-- `fetch kagent`: `kubectl get` calls, checked with a fake `kubectl` that records every call; Secrets are never read.
-- `deploy` for all three platforms (18 tests in `tests/test_deploy.py`; Azure was also run for real, above): dry-run default, `--apply` with confirmation / `--yes`, no tty without `--yes` → exit 2, placeholder refusal, create-only (existing objects/agents/stacks are errors), undo hint, `-O check=remote` read-only checks.
+- `deploy` for all three platforms (tests in `tests/test_deploy.py`; Azure and Kagent were also run for real, above): dry-run default, `--apply` with confirmation / `--yes`, no tty without `--yes` → exit 2, placeholder refusal, create-only (existing objects/agents/stacks are errors), undo hint, `-O check=remote` read-only checks.
 
 ## Not verified
 
-- Any real `deploy` to Bedrock or Kagent.
+- Any real `deploy` to Bedrock.
 - Bedrock CloudFormation stack creation (`OnFailure=ROLLBACK`, IAM capabilities, `ValidateTemplate`) against real AWS.
-- Kagent `kubectl create` / `--dry-run=server` against a real cluster and the real CRDs (CRD schemas are validated offline from `fixtures/kagent/crds/`).
+- Kagent `v1alpha3` against a real cluster.
 - GCP: never touched (the test project had no AI APIs enabled).
 
 ## Cheapest next real tests
 
-1. Kagent fetch + deploy on a throwaway cluster (no cloud cost).
-2. Bedrock fetch, then deploy of a stack with a role that has no extra permissions (delete the stack afterwards).
+1. Bedrock fetch, then deploy of a stack with a role that has no extra permissions (delete the stack afterwards).

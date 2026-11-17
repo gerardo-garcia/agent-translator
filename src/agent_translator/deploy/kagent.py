@@ -49,6 +49,18 @@ def _ref(d: dict) -> str:
     return f"{d.get('kind')}/{meta.get('name')}{ns}"
 
 
+def _undo(d: dict, options: dict[str, str]) -> str:
+    """`kubectl delete` for one object, carrying the same context and namespace as the deploy."""
+    meta = d.get("metadata") or {}
+    cmd = f"{options.get('kubectl', 'kubectl')}"
+    if options.get("context"):
+        cmd += f" --context {options['context']}"
+    ns = meta.get("namespace") or options.get("namespace")
+    if ns:
+        cmd += f" -n {ns}"
+    return f"{cmd} delete {str(d.get('kind')).lower()} {meta.get('name')}"
+
+
 def plan(path: Path, options: dict[str, str], client: Runner | None = None) -> tuple[Plan | None, Report]:
     rep = Report(target="kagent")
     f = single_file(path, ("kagent.yaml",), (".yaml", ".yml"), rep)
@@ -79,8 +91,7 @@ def plan(path: Path, options: dict[str, str], client: Runner | None = None) -> t
     ctx = options.get("context") or "(current kubectl context)"
     target = f"{ctx}, namespace {options.get('namespace') or '(the context default)'}"
     pl = Plan("kagent", target, [Step("create", _ref(d), d["apiVersion"]) for d in docs],
-              undo="; ".join("kubectl delete " + _ref(d).replace("/", " ", 1).lower()
-                             for d in reversed(docs)), data=docs)
+              undo="; ".join(_undo(d, options) for d in reversed(docs)), data=docs)
     if options.get("check") == "remote":
         run = client or _run
         for d in docs:
