@@ -202,7 +202,11 @@ lists what changed.
 Bring an agent that already exists on a platform into local files, in a format the adapters read:
 
 ```bash
-uv sync --extra fetch-aws --extra fetch-azure        # only what you need
+# fetch talks to the platforms through their SDKs, which are optional extras so that plain
+# translation stays dependency-light: boto3 (`fetch bedrock`) and azure-ai-projects +
+# azure-identity (`fetch azure`). `fetch kagent` only needs `kubectl`. `deploy` uses the same SDKs.
+# --all-extras installs them all; `uv sync --extra X` alone would also uninstall the dev tools.
+uv sync --all-extras
 agent-translator fetch bedrock AGENT_ID[:VERSION] -O region=us-east-1 [-O profile=NAME]
 agent-translator fetch kagent [NAMESPACE/]NAME [-O context=CTX] [-O api_version=v1alpha2]
 agent-translator fetch azure AGENT_NAME[:VERSION] -O endpoint=https://<acct>.services.ai.azure.com/api/projects/<proj>
