@@ -72,7 +72,7 @@ def fetch(
     """Read an agent from a cloud/cluster into local files (read-only; never writes remotely).
 
     Examples: fetch bedrock AGENTID -O region=us-east-1 | fetch kagent kagent/my-agent |
-    fetch azure my-agent -O endpoint=https://...
+    fetch azure my-agent -O endpoint=https://... | fetch adk ENGINE_ID -O project=P -O region=R
     """
     files, rep = _fetch(platform, ref, out, _options(option))
     _print_report(rep)
@@ -97,7 +97,8 @@ def deploy(
     Create-only: existing objects/agents/stacks are never overwritten or deleted, and Secrets are
     never created. Examples: deploy kagent out/kagent.yaml -O context=lab |
     deploy bedrock out/ -O region=eu-west-1 -O model=… -O role_arn=… |
-    deploy azure out/azure.yaml -O endpoint=https://…  (add -O check=remote for read-only checks)
+    deploy azure out/azure.yaml -O endpoint=https://… |
+    deploy adk out/ -O project=P -O region=europe-west1  (add -O check=remote for read-only checks)
     """
     deployers = load_deployers()
     if platform not in deployers:

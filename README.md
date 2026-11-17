@@ -204,24 +204,32 @@ Bring an agent that already exists on a platform into local files, in a format t
 ```bash
 # fetch talks to the platforms through their SDKs, which are optional extras so that plain
 # translation stays dependency-light: boto3 (`fetch bedrock`) and azure-ai-projects +
-# azure-identity (`fetch azure`). `fetch kagent` only needs `kubectl`. `deploy` uses the same SDKs.
+# azure-identity (`fetch azure`), google-auth (`fetch adk`). `fetch kagent` only needs `kubectl`.
+# `deploy` uses the same SDKs.
 # --all-extras installs them all; `uv sync --extra X` alone would also uninstall the dev tools.
 uv sync --all-extras
 agent-translator fetch bedrock AGENT_ID[:VERSION] -O region=us-east-1 [-O profile=NAME]
 agent-translator fetch kagent [NAMESPACE/]NAME [-O context=CTX] [-O api_version=v1alpha2]
 agent-translator fetch azure AGENT_NAME[:VERSION] -O endpoint=https://<acct>.services.ai.azure.com/api/projects/<proj>
+agent-translator fetch adk ENGINE_ID -O project=<project> -O region=europe-west1     # Vertex AI Agent Engine
 
 # or fetch and translate in one step:
 agent-translator translate AGENT_ID --fetch --from bedrock --fetch-option region=us-east-1 --to kagent
 ```
 
 Fetching only *reads* (Bedrock `Get*`/`List*`, `kubectl get`, Azure `agents.get`) with your own
-credentials (the AWS default chain, your kubeconfig, `DefaultAzureCredential`). It never writes to the
-platform and never reads Secrets. ADK and Agent Spec have no `fetch`: they are already local files.
+credentials (the AWS default chain, your kubeconfig, `DefaultAzureCredential`, Google Application Default
+Credentials). It never writes to the platform and never reads Secrets (environment-variable values of an
+Agent Engine are redacted). Agent Spec has no `fetch`: it is already local files.
 
-Verification status: tested against fakes (botocore's `Stubber`, a fake `kubectl`, a fake Azure client)
-and, for Azure, once against a real Foundry project. Bedrock and Kagent fetch have not been run against
-a real account or cluster yet.
+`fetch adk` reads a Vertex AI Agent Engine (`reasoningEngines.get`). An engine deployed from *source* that
+contains a `root_agent.yaml` (what `deploy adk` creates) is extracted and translatable; an engine deployed as a
+pickled Python object or from Python-only source holds code, not an agent definition, so you only get its
+resource JSON and a `manual` report item.
+
+Verification status: tested against fakes (botocore's `Stubber`, a fake `kubectl`, fake Azure and Google clients);
+Azure and Kagent were also run once against a real Foundry project and a lab cluster. **Bedrock and ADK/Google
+fetch have not been run against a real account yet.**
 
 ## 3. Deploy (writes to your account — dry run by default)
 
@@ -234,6 +242,8 @@ agent-translator deploy kagent out/kagent.yaml -O context=lab -O check=remote   
 agent-translator deploy kagent out/kagent.yaml -O context=lab --apply                    # asks for confirmation
 agent-translator deploy azure out/azure.yaml -O endpoint=https://<acct>.services.ai.azure.com/api/projects/<proj> --apply --yes
 agent-translator deploy bedrock out/ -O region=eu-west-1 -O model=<model-id> -O role_arn=<role-arn> --apply
+agent-translator translate my-agent/ --to adk -o adk-out
+agent-translator deploy adk adk-out -O project=<project> -O region=europe-west1 --apply   # Agent Engine
 ```
 
 `deploy` is conservative on purpose:
@@ -250,13 +260,17 @@ agent-translator deploy bedrock out/ -O region=eu-west-1 -O model=<model-id> -O 
   (this tool does not create deployments, which is where Azure's cost is). Bedrock: one
   CloudFormation stack from the emitted template (atomic, rolls back on failure, removed completely
   with `delete-stack`); the `-O format=sdk` output is not deployable. `-O wait=true` blocks until created.
+- ADK: runs Google's own `adk deploy agent_engine` (it owns the packaging) after the same checks; unimplemented
+  stubs in the generated `tools.py` are refused, and `check=remote` refuses a display name that already exists.
+  `google-adk` must be installed in that environment (it cannot share a lock with the Azure SDK extras). An
+  Agent Engine bills while it exists; the undo command (a `DELETE` with the engine's id) is printed.
 - Same extras and credentials as `fetch`. Bedrock needs `cloudformation:CreateStack`/`DescribeStacks`/
   `ValidateTemplate`, `iam:PassRole` for the agent role, and the `bedrock:*` actions CloudFormation
   performs for the resources in the template.
 
 Verification status: `deploy azure` and `deploy kagent` were each run once against a real environment (a disposable
 Foundry project and a lab K3s cluster: create, duplicate refusal, read back with `fetch`, cleanup). **`deploy bedrock`
-has only been tested against fakes**, so try it on a throwaway target first. Details in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+and `deploy adk` have only been tested against fakes**, so try them on a throwaway target first. Details in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Development
 

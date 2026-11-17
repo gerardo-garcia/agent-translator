@@ -9,7 +9,7 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 | Azure Foundry | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
 | AWS Bedrock | fakes only | fakes only |
 | Kagent | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
-| GCP ADK | not implemented (no fetcher) | not implemented |
+| GCP ADK (Agent Engine) | fakes only | fakes only |
 
 ## Real test: `fetch kagent` and `deploy kagent` (2026-11-17)
 
@@ -28,7 +28,7 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 
 ## GCP / ADK (2026-11-17)
 
-No cloud call was made; ADK has no fetcher or deployer. The emitted ADK projects were loaded with the real `google-adk` 2.14.1 (`from_config`, the first step of `adk run` / `adk web`): `tests/test_adk_real_loader.py`, 28 loaded, 35 skipped because their reports already ask for the user's own code or manual work (stubs, Python functions, callbacks, stdio MCP, custom agent classes).
+No cloud call was made. The emitted ADK projects were loaded with the real `google-adk` 2.14.1 (`from_config`, the first step of `adk run` / `adk web`): `tests/test_adk_real_loader.py`, 28 loaded, 35 skipped because their reports already ask for the user's own code or manual work (stubs, Python functions, callbacks, stdio MCP, custom agent classes).
 
 - Bug found and fixed: ruamel wrote `threshold: OFF` unquoted; PyYAML (YAML 1.1) read it as `False` and ADK rejected the config. All emitters now go through `yamlio.new_yaml()`, which quotes such strings (also helps Go-based Kubernetes readers).
 - ADK refuses stdio MCP servers in agent configs (security policy), which matches the `mcp-stdio` report item.
@@ -60,6 +60,9 @@ No cloud call was made; ADK has no fetcher or deployer. The emitted ADK projects
 
 ## Tested with fakes only
 
+- `fetch adk` (`tests/test_adk_cloud.py`): `reasoningEngines.get` through a fake REST client; extraction of an inline source archive (path traversal and links refused), env-value redaction, pickled/Python-only engines reported as `manual`. The real GET response shape (in particular whether `sourceArchive` is returned) is unverified.
+- `deploy adk`: the command line is built for Google's `adk deploy agent_engine` and every flag it uses was checked to exist in the real `google-adk` 2.14.1 CLI; the run itself, the engine-name parsing from its output and the `DELETE` undo command are only exercised with fakes. Stubs/placeholders refusal, create-only name check (paginated list) and consent rules are tested.
+
 - `fetch bedrock`: `Get*/List*` calls, checked with `Stubber` (un-queued calls are rejected).
 - `deploy` for all three platforms (tests in `tests/test_deploy.py`; Azure and Kagent were also run for real, above): dry-run default, `--apply` with confirmation / `--yes`, no tty without `--yes` → exit 2, placeholder refusal, create-only (existing objects/agents/stacks are errors), undo hint, `-O check=remote` read-only checks.
 
@@ -68,8 +71,9 @@ No cloud call was made; ADK has no fetcher or deployer. The emitted ADK projects
 - Any real `deploy` to Bedrock.
 - Bedrock CloudFormation stack creation (`OnFailure=ROLLBACK`, IAM capabilities, `ValidateTemplate`) against real AWS.
 - Kagent `v1alpha3` against a real cluster.
-- GCP: never touched (the test project had no AI APIs enabled).
+- GCP: never touched (the test project had no AI APIs enabled): neither `fetch adk` nor `deploy adk` has talked to a real Vertex AI endpoint, and it is unknown whether `adk deploy agent_engine` accepts a YAML-config agent folder as emitted here.
 
 ## Cheapest next real tests
 
-1. Bedrock fetch, then deploy of a stack with a role that has no extra permissions (delete the stack afterwards).
+1. GCP: enable `aiplatform`, `deploy adk` a tiny agent, `fetch adk` it back, delete it (see the permissions list).
+2. Bedrock fetch, then deploy of a stack with a role that has no extra permissions (delete the stack afterwards).

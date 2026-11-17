@@ -20,16 +20,19 @@ validate-agentspec = ["pyagentspec>=26.3"]
 validate-bedrock = ["botocore>=1.40"]
 fetch-aws = ["boto3>=1.40"]
 fetch-azure = ["azure-ai-projects>=2", "azure-identity>=1.19"]
+fetch-gcp = ["google-auth>=2.30", "requests>=2.31"]
 
 [project.entry-points."agent_translator.fetchers"]
 bedrock = "agent_translator.fetch.bedrock:fetch"
 kagent = "agent_translator.fetch.kagent:fetch"
 azure = "agent_translator.fetch.azure:fetch"
+adk = "agent_translator.fetch.adk:fetch"
 
 [project.entry-points."agent_translator.deployers"]
 bedrock = "agent_translator.deploy.bedrock"
 kagent = "agent_translator.deploy.kagent"
 azure = "agent_translator.deploy.azure"
+adk = "agent_translator.deploy.adk"
 
 [project.scripts]
 agent-translator = "agent_translator.cli:app"

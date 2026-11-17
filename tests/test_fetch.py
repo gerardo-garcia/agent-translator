@@ -255,7 +255,7 @@ def test_cli_translate_fetch(tmp_path, monkeypatch):
 
 
 def test_cli_fetch_unknown_platform():
-    r = CliRunner().invoke(cli.app, ["fetch", "adk", "x"])
+    r = CliRunner().invoke(cli.app, ["fetch", "agentspec", "x"])
     assert r.exit_code != 0 and "cannot fetch" in r.output
 
 
