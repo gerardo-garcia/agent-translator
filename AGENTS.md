@@ -45,4 +45,4 @@ Optional extras gate tests via `importorskip`: `validate-azure`, `validate-agent
 - Fixtures in `fixtures/<platform>/` are official samples; synthetic ones are marked as such and every source is recorded in `fixtures/*/SOURCES.md` — keep that file in sync when adding fixtures.
 - `tests/test_matrix.py` runs every fixture through every target (including back-parse); a new platform or option normally means adding it to its `SOURCES`/`TARGETS`.
 - Per-platform helpers live in `tests/*_helpers.py`; goldens in `tests/golden/`.
-- Cloud behavior is tested only with fakes (botocore `Stubber`, fake `kubectl`, fake Azure client). `fetch azure` was additionally verified once against real Azure; Bedrock/Kagent fetch and all of `deploy` have never run against a real environment — say so rather than claiming otherwise.
+- Cloud behavior is tested only with fakes (botocore `Stubber`, fake `kubectl`, fake Azure client). `fetch azure` and `deploy azure` were additionally verified once against real Azure (see `docs/VERIFICATION.md`); Bedrock/Kagent fetch and Bedrock/Kagent deploy have never run against a real environment — say so rather than claiming otherwise.
