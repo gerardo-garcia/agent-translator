@@ -40,3 +40,16 @@ jobs:
       # schemas run instead of being skipped.
       - run: uv sync --locked --all-extras
       - run: uv run pytest -q
+
+  # google-adk needs openai<3 while the Azure SDK extras resolve to openai 3.x, so the two cannot
+  # share one lock file: the real-ADK loader test runs in its own overlay environment.
+  adk-loader:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+      - run: >
+          uv run --locked --all-extras --with "google-adk[extensions]" --with mcp
+          pytest -q tests/test_adk_real_loader.py

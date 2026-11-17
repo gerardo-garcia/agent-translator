@@ -12,6 +12,8 @@ from ruamel.yaml import YAML
 from ruamel.yaml.nodes import MappingNode, ScalarNode
 from ruamel.yaml.scalarstring import LiteralScalarString
 
+from ...yamlio import new_yaml
+
 AGENT = "AWS::Bedrock::Agent"
 ALIAS = "AWS::Bedrock::AgentAlias"
 GUARDRAIL = "AWS::Bedrock::Guardrail"
@@ -126,7 +128,7 @@ def lit(v: Any) -> Any:
 
 
 def dumper() -> YAML:
-    y = YAML()
+    y = new_yaml()
     y.default_flow_style = False
     y.indent(mapping=2, sequence=4, offset=2)
     y.width = 100

@@ -11,6 +11,14 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 | Kagent | fakes only | fakes only |
 | GCP ADK | not implemented (no fetcher) | not implemented |
 
+## GCP / ADK (2026-11-17)
+
+No cloud call was made; ADK has no fetcher or deployer. The emitted ADK projects were loaded with the real `google-adk` 2.14.1 (`from_config`, the first step of `adk run` / `adk web`): `tests/test_adk_real_loader.py`, 28 loaded, 35 skipped because their reports already ask for the user's own code or manual work (stubs, Python functions, callbacks, stdio MCP, custom agent classes).
+
+- Bug found and fixed: ruamel wrote `threshold: OFF` unquoted; PyYAML (YAML 1.1) read it as `False` and ADK rejected the config. All emitters now go through `yamlio.new_yaml()`, which quotes such strings (also helps Go-based Kubernetes readers).
+- ADK refuses stdio MCP servers in agent configs (security policy), which matches the `mcp-stdio` report item.
+- The model is never called: no GCP project, API or credentials are involved.
+
 ## Real test: `fetch azure` (2026-11-17)
 
 - Setup: a disposable `AIServices` S0 account plus one Foundry project in a test resource group, no model deployments (expected cost 0). Role "Azure AI User" (id `53ca6127-db72-4b80-b1b0-d745d6d5456d`) was needed for the agent data plane.

@@ -12,9 +12,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from ruamel.yaml import YAML
-
 from ..report import Report, Severity
+from ..yamlio import new_yaml
 from . import safe_filename
 
 GROUP = "kagent.dev"
@@ -102,7 +101,7 @@ def fetch(ref: str, out: Path, options: dict[str, str], client: Any = None) -> t
         queue += refs_of(d, d.get("metadata", {}).get("namespace") or nspace)
     out.mkdir(parents=True, exist_ok=True)
     f = out / f"{safe_filename(name)}.yaml"
-    y = YAML()
+    y = new_yaml()
     y.default_flow_style = False
     with f.open("w") as fh:
         y.dump_all(docs, fh)

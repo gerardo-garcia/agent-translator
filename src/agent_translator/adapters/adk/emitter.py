@@ -275,8 +275,9 @@ class Pkg:
     def _dump(self, cfg: dict) -> str:
         import io
 
-        from ruamel.yaml import YAML
         from ruamel.yaml.scalarstring import LiteralScalarString
+
+        from ...yamlio import new_yaml
 
         def lit(v: Any) -> Any:
             if isinstance(v, str) and "\n" in v:
@@ -286,7 +287,7 @@ class Pkg:
             if isinstance(v, list):
                 return [lit(x) for x in v]
             return v
-        y = YAML()
+        y = new_yaml()
         y.default_flow_style = False
         y.indent(mapping=2, sequence=4, offset=2)
         y.width = 4096

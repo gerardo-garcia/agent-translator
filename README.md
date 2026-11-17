@@ -265,6 +265,10 @@ uv sync --all-extras          # NOTE: `uv sync --extra X` alone removes the dev 
 uv run pytest
 uv run ruff check .
 uv run agent-translator ir-schema    # JSON Schema of the IR, published as schema/ir.schema.json
+
+# Load every emitted ADK project with the real google-adk (kept out of --all-extras: google-adk
+# needs openai<3, which conflicts with the Azure SDK extras)
+uv run --all-extras --with "google-adk[extensions]" --with mcp pytest tests/test_adk_real_loader.py
 ```
 
 [AGENTS.md](AGENTS.md) describes the architecture and conventions for contributors (human or AI).

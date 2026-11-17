@@ -18,6 +18,7 @@ from ruamel.yaml import YAML
 from ...ir import AgentIR, Resources
 from ...models import adapt_ir
 from ...report import Report, Severity
+from ...yamlio import new_yaml
 from . import common as c
 from . import foundry, framework
 
@@ -38,7 +39,7 @@ def _load(path: Path):
 
 
 def _dumper() -> YAML:
-    y = YAML()
+    y = new_yaml()
     y.default_flow_style = False
     y.indent(mapping=2, sequence=4, offset=2)
     y.width = 4096

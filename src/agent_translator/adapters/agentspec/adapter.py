@@ -9,11 +9,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ruamel.yaml import YAML
-
 from ...ir import AgentIR, Resources
 from ...models import adapt_ir
 from ...report import Report, Severity
+from ...yamlio import new_yaml
 from . import common as c
 from .emitter import emit_doc
 from .parser import Parser
@@ -59,7 +58,7 @@ class AgentSpecAdapter:
         for a in ir.agents:                      # children of workflow agents get their own file
             if a.id in children and any(a.id in p.sub_agents for p in ir.agents if p.id in mode_flat):
                 roots.append(a)
-        y = YAML()
+        y = new_yaml()
         y.default_flow_style = False
         y.indent(mapping=2, sequence=4, offset=2)
         y.width = 4096
