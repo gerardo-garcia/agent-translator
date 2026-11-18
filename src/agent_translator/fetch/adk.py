@@ -9,6 +9,11 @@ the engine was deployed from source (``spec.sourceCodeSpec.inlineSource``), the 
 The returned file is that project's ``root_agent.yaml``, which the ADK adapter translates. Engines
 deployed as a pickled Python object (``packageSpec``) or from Python-only source hold code, not an
 agent definition: the resource JSON is still written, with a ``manual`` report item.
+
+Verified against the real service (2026-11-18): ``GET`` returns ``sourceCodeSpec.inlineSource`` EMPTY
+for an engine deployed from source, in both v1 and v1beta1. The extraction path below therefore only
+runs if the API ever returns the archive; today ``fetch adk`` yields the metadata JSON and a
+``source-not-returned`` report item.
 """
 from __future__ import annotations
 
@@ -131,7 +136,12 @@ def fetch(ref: str, out: Path, options: dict[str, str], client: Any = None) -> t
                 f"found {len(roots)} root_agent.yaml files; translate the one you want from "
                 f"{out / safe_filename(engine_id)}")
         return [meta], rep
-    if spec.get("packageSpec"):
+    if spec.get("sourceCodeSpec"):
+        rep.add(Severity.manual, "source-not-returned", name,
+                "the API does not return the source of a deployed engine (sourceCodeSpec.inlineSource "
+                "comes back empty, verified against the real service): only its metadata can be fetched; "
+                "keep the project you deployed from")
+    elif spec.get("packageSpec"):
         rep.add(Severity.manual, "pickled-agent", name,
                 "deployed as a pickled Python object (packageSpec): it holds code, not an agent definition")
     else:

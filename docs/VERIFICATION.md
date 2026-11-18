@@ -9,7 +9,7 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 | Azure Foundry | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
 | AWS Bedrock | fakes only | fakes only |
 | Kagent | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
-| GCP ADK (Agent Engine) | fakes only | fakes only |
+| GCP ADK (Agent Engine) | **real** (once, 2026-11-18; metadata only, see below) + fakes | **real** (once, 2026-11-18) + fakes |
 
 ## Real test: `fetch kagent` and `deploy kagent` (2026-11-17)
 
@@ -26,7 +26,16 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 - Cleanup: the namespace was deleted (which removed every object in it). Cost: none.
 - Not covered: v1alpha3 (this cluster only has v1alpha2), `AgentTemplate`, Secrets, a multi-object failure part-way (a later object failing after earlier ones were created is reported but not rolled back).
 
-## GCP / ADK (2026-11-17)
+## Real test: `deploy adk` and `fetch adk` on Vertex AI Agent Engine (2026-11-18)
+
+- Setup: project with the Vertex AI API newly enabled and ADC credentials of the user; region `europe-west1`. Input: a minimal one-agent ADK project (`translate --from adk --to adk`, a single `root_agent.yaml`, Gemini 2.5 Flash, no tools). Cost: the engine existed about 15 minutes; expected cents.
+- `deploy adk` (dry run with `-O check=remote`, then `--apply --yes`): the real `adk deploy agent_engine` accepted the YAML-config folder as emitted, and created the engine; the engine name was parsed from its output and the printed `DELETE` command removed it (GET then returned 404, list empty).
+- Found: the first attempt failed with `No module named 'agentplatform'`; `google-adk` needs its `gcp` extra (`google-adk[gcp]`) for `adk deploy agent_engine`. The error now carries that hint and the docs say so.
+- Found: `fetch adk` works but the API does **not** return the source of a deployed engine: `spec.sourceCodeSpec.inlineSource` is `{}` in both v1 and v1beta1. So fetch yields metadata JSON only, with a `source-not-returned` report item; an engine cannot be translated back from the cloud. The archive-extraction code is kept for the case the API starts returning it, but it is untested against the real service.
+- Side effects checked: no buckets, no Artifact Registry repo, Cloud Build not enabled, no new APIs.
+- Not covered: tools, sub-agents, MCP, service accounts, invoking the agent, and non-Gemini models (LiteLLM) on Agent Engine.
+
+## GCP / ADK loader (2026-11-17)
 
 No cloud call was made. The emitted ADK projects were loaded with the real `google-adk` 2.14.1 (`from_config`, the first step of `adk run` / `adk web`): `tests/test_adk_real_loader.py`, 28 loaded, 35 skipped because their reports already ask for the user's own code or manual work (stubs, Python functions, callbacks, stdio MCP, custom agent classes).
 
@@ -60,8 +69,8 @@ No cloud call was made. The emitted ADK projects were loaded with the real `goog
 
 ## Tested with fakes only
 
-- `fetch adk` (`tests/test_adk_cloud.py`): `reasoningEngines.get` through a fake REST client; extraction of an inline source archive (path traversal and links refused), env-value redaction, pickled/Python-only engines reported as `manual`. The real GET response shape (in particular whether `sourceArchive` is returned) is unverified.
-- `deploy adk`: the command line is built for Google's `adk deploy agent_engine` and every flag it uses was checked to exist in the real `google-adk` 2.14.1 CLI; the run itself, the engine-name parsing from its output and the `DELETE` undo command are only exercised with fakes. Stubs/placeholders refusal, create-only name check (paginated list) and consent rules are tested.
+- `fetch adk` (`tests/test_adk_cloud.py`): `reasoningEngines.get` through a fake REST client; extraction of an inline source archive (path traversal and links refused; the real service does not return one), env-value redaction, pickled/Python-only engines reported as `manual`.
+- `deploy adk`: stubs/placeholders refusal, the create-only name check (paginated list), consent rules and the missing-extra hint, besides the real run above.
 
 - `fetch bedrock`: `Get*/List*` calls, checked with `Stubber` (un-queued calls are rejected).
 - `deploy` for all three platforms (tests in `tests/test_deploy.py`; Azure and Kagent were also run for real, above): dry-run default, `--apply` with confirmation / `--yes`, no tty without `--yes` → exit 2, placeholder refusal, create-only (existing objects/agents/stacks are errors), undo hint, `-O check=remote` read-only checks.
@@ -71,9 +80,8 @@ No cloud call was made. The emitted ADK projects were loaded with the real `goog
 - Any real `deploy` to Bedrock.
 - Bedrock CloudFormation stack creation (`OnFailure=ROLLBACK`, IAM capabilities, `ValidateTemplate`) against real AWS.
 - Kagent `v1alpha3` against a real cluster.
-- GCP: never touched (the test project had no AI APIs enabled): neither `fetch adk` nor `deploy adk` has talked to a real Vertex AI endpoint, and it is unknown whether `adk deploy agent_engine` accepts a YAML-config agent folder as emitted here.
+- GCP: only the minimal agent above; richer agents (tools, sub-agents) have not been deployed.
 
 ## Cheapest next real tests
 
-1. GCP: enable `aiplatform`, `deploy adk` a tiny agent, `fetch adk` it back, delete it (see the permissions list).
-2. Bedrock fetch, then deploy of a stack with a role that has no extra permissions (delete the stack afterwards).
+1. Bedrock fetch, then deploy of a stack with a role that has no extra permissions (delete the stack afterwards).

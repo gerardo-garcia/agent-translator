@@ -86,6 +86,15 @@ def test_fetch_pickled_agent_is_manual(tmp_path):
     assert [f.suffix for f in files] == [".json"]
 
 
+def test_fetch_real_shape_empty_inline_source_is_reported(tmp_path):
+    """Shape returned by the real service (2026-11-18): sourceCodeSpec present, inlineSource empty."""
+    res = {"name": NAME, "displayName": "helper",
+           "spec": {"agentFramework": "google-adk", "sourceCodeSpec": {"inlineSource": {}, "imageSpec": {}}}}
+    files, rep = fadk.fetch("123", tmp_path, {"project": "p1", "region": "r"}, client=FakeRest(res))
+    assert [i.code for i in rep.items if i.severity >= Severity.manual] == ["source-not-returned"]
+    assert [f.suffix for f in files] == [".json"]
+
+
 def test_fetch_python_only_source_is_manual(tmp_path):
     rest = FakeRest(engine(tarball({"app/agent.py": "root_agent = None\n"})))
     files, rep = fadk.fetch("123", tmp_path, {"project": "p1", "region": "r"}, client=rest)
@@ -222,6 +231,13 @@ def test_apply_failure_is_an_error_and_keeps_the_engine_name_if_any(tmp_path):
     rep = dadk.apply(pl, OPTS, client=be)
     assert rep.worst >= Severity.error and NAME in rep.items[0].message
     assert NAME in pl.undo
+
+
+def test_missing_gcp_extra_gets_a_hint(tmp_path):
+    be = FakeBackend(err="Deploy failed: No module named 'agentplatform'", rc=1)
+    pl, _ = dadk.plan(project(tmp_path), OPTS)
+    rep = dadk.apply(pl, OPTS, client=be)
+    assert "google-adk[gcp]" in rep.items[0].message
 
 
 def test_apply_without_engine_name_warns(tmp_path):

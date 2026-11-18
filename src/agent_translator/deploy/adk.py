@@ -10,8 +10,9 @@ GOOGLE_CLOUD_PROJECT) and ``region`` (or GOOGLE_CLOUD_LOCATION) are required; ``
 (default: the agent name), ``description``, ``service_account``, ``adk`` (path to the binary,
 default ``adk``), ``api_version`` (default ``v1``), ``check=remote`` (read-only: lists the engines
 of the region and refuses a display name that already exists). Authentication: Application
-Default Credentials. ``google-adk`` is not a dependency of this package (it cannot share a
-resolution with the Azure SDK): install it in the environment that runs the deploy.
+Default Credentials. ``google-adk[gcp]`` is not a dependency of this package (it cannot share a
+resolution with the Azure SDK): install it in the environment that runs the deploy. The ``gcp`` extra
+is required: without it ``adk deploy agent_engine`` stops with "No module named 'agentplatform'".
 
 Create-only: ``adk deploy agent_engine`` is never given ``--agent_engine_id``, so an existing engine
 is never updated. An Agent Engine bills while it exists; the undo command is printed with its id.
@@ -47,7 +48,7 @@ class Backend:
             p = subprocess.run(cmd, capture_output=True, text=True, check=False, env=os.environ.copy())
         except FileNotFoundError:
             return 127, "", (f"{cmd[0]!r} not found: install google-adk in this environment "
-                             "(pip install google-adk) or pass -O adk=/path/to/adk")
+                             "(pip install 'google-adk[gcp]') or pass -O adk=/path/to/adk")
         return p.returncode, p.stdout, p.stderr
 
 
@@ -162,6 +163,8 @@ def apply(pl: Plan, options: dict[str, str], client: Any = None) -> Report:
         pl.undo = _delete_hint(name, pl.data["region"], pl.data["version"])
     if rc:
         tail = (err.strip() or out.strip())[-600:]
+        if "agentplatform" in tail:
+            tail += " (install the ADK Google Cloud extra: pip install 'google-adk[gcp]')"
         rep.add(Severity.error, "create-failed", pl.target,
                 f"adk exited with {rc}: {tail}" + (f" (an engine may have been created: {name})" if name else ""))
         return rep
