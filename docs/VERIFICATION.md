@@ -7,7 +7,7 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 | Platform | fetch | deploy |
 |----------|-------|--------|
 | Azure Foundry | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
-| AWS Bedrock | fakes only | fakes only |
+| AWS Bedrock | fakes only | fakes only (a real attempt on 2026-11-20 was blocked by AWS, see below) |
 | Kagent | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
 | GCP ADK (Agent Engine) | **real** (once, 2026-11-18; metadata only, see below) + fakes | **real** (once, 2026-11-18) + fakes |
 
@@ -67,6 +67,14 @@ No cloud call was made. The emitted ADK projects were loaded with the real `goog
 - Cleanup: agent, model deployment, project and account deleted. The account `agtr-dep-11171141` stays soft-deleted (purge is denied, same missing subscription-scope permission); not billed.
 - Not covered: `kind` other than `prompt` (refused by design), tools that need credentials, invoking the agent.
 
+## Attempted: `deploy bedrock` (2026-11-20), blocked by AWS
+
+- Account: a corporate AWS account with no previous Bedrock Agents usage; IAM user with IAM, Bedrock and CloudFormation permissions; region `eu-west-1`; model `eu.amazon.nova-lite-v1:0`; a single service role created for the test and deleted afterwards.
+- `deploy bedrock -O check=remote` (dry run): `ValidateTemplate` accepted the emitted template and the plan listed the stack with the agent and its alias. This part is real.
+- `--apply --yes`: CloudFormation created the stack and rolled it back (`ROLLBACK_COMPLETE`, `AccessDenied` on `AWS::Bedrock::Agent`). Calling `bedrock-agent create-agent` directly returned the cause: *Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior service usage.* Per the AWS documentation, Bedrock Agents Classic stopped accepting new customers on 2026-07-30 and AWS recommends migrating to Amazon Bedrock AgentCore.
+- So this is not a tool bug, but it means a real create/fetch round trip could not be run. The failed stack, the role and its policy were deleted; no agent was ever created, and nothing is left in the account.
+- Consequence: `fetch bedrock` and `deploy bedrock` only apply to accounts that already use Bedrock Agents Classic. Targeting AgentCore is not implemented.
+
 ## Tested with fakes only
 
 - `fetch adk` (`tests/test_adk_cloud.py`): `reasoningEngines.get` through a fake REST client; extraction of an inline source archive (path traversal and links refused; the real service does not return one), env-value redaction, pickled/Python-only engines reported as `manual`.
@@ -77,11 +85,11 @@ No cloud call was made. The emitted ADK projects were loaded with the real `goog
 
 ## Not verified
 
-- Any real `deploy` to Bedrock.
-- Bedrock CloudFormation stack creation (`OnFailure=ROLLBACK`, IAM capabilities, `ValidateTemplate`) against real AWS.
+- A successful real `deploy bedrock` (agent creation): only `ValidateTemplate` and the failure path (rollback, then stack deletion) were seen against real AWS.
+- Any real `fetch bedrock`: it needs an existing classic agent, which a new account can no longer create.
 - Kagent `v1alpha3` against a real cluster.
 - GCP: only the minimal agent above; richer agents (tools, sub-agents) have not been deployed.
 
 ## Cheapest next real tests
 
-1. Bedrock fetch, then deploy of a stack with a role that has no extra permissions (delete the stack afterwards).
+1. Bedrock fetch, then deploy, but only in an AWS account that already has Bedrock Agents Classic agents (new accounts cannot create them); use a role with only `bedrock:InvokeModel` and delete the stack afterwards.

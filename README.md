@@ -229,7 +229,7 @@ empty), so `fetch adk` gives you the resource metadata as JSON (name, framework,
 
 Verification status: tested against fakes (botocore's `Stubber`, a fake `kubectl`, fake Azure and Google clients);
 Azure, Kagent and ADK/Google were also run once against a real Foundry project, a lab cluster and a Google Cloud
-project. **Bedrock fetch has not been run against a real account yet.**
+project. **Bedrock fetch has not been run against a real account yet**, and new AWS accounts can no longer create classic Bedrock agents to fetch.
 
 ## 3. Deploy (writes to your account — dry run by default)
 
@@ -272,7 +272,7 @@ agent-translator deploy adk adk-out -O project=<project> -O region=europe-west1 
 
 Verification status: `deploy azure`, `deploy kagent` and `deploy adk` were each run once against a real environment (a disposable
 Foundry project, a lab K3s cluster and a Google Cloud project: create, read back, cleanup). **`deploy bedrock`
-has only been tested against fakes**, so try it on a throwaway target first. Details in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+has only been tested against fakes** (a real attempt was blocked: AWS closed Bedrock Agents Classic to new accounts on 2026-07-30, so a stack can only create agents in accounts that already used the service; AgentCore is not supported), so try it on a throwaway target first. Details in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Development
 
