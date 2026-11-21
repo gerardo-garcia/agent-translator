@@ -1,7 +1,7 @@
 # agent-translator
 
 Translate AI agent definitions between platforms: **AWS Bedrock Agents**, **GCP ADK**, **Azure Foundry
-Agent Service** and **Kagent**, with Oracle Agent Spec as an interchange format. Every translation goes
+Agent Service** and **Kagent**, with Oracle Agent Spec as an interchange format and Amazon Bedrock AgentCore as an output-only target. Every translation goes
 through a common intermediate representation (IR), so N platforms need 2N adapters instead of N·(N-1)
 translators, and anything that cannot be translated exactly is **reported, never dropped silently**.
 
@@ -32,6 +32,20 @@ uv run agent-translator --help
 | GCP ADK | Agent Config YAML (`root_agent.yaml` + referenced files) | same, plus generated `tools.py` / `models.py` when YAML is not enough |
 | Azure Foundry | `azure.yaml` prompt agents, Agent Framework `kind: Prompt` | same (`-O format=foundry\|agent-framework`, default foundry) |
 | Oracle Agent Spec | `Agent`, `ManagerWorkers`, `Swarm` YAML/JSON (flows are reported, not translated) | same |
+| AWS Bedrock AgentCore | — (emit-only) | CloudFormation `AWS::BedrockAgentCore::Harness`, one harness per agent (`--to agentcore`) |
+
+**AgentCore (emit-only).** AWS closed Bedrock Agents Classic to new accounts on 2026-07-30 and recommends
+[AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/). `--to agentcore` writes a CloudFormation template
+with one `AWS::BedrockAgentCore::Harness` per agent: model (Bedrock, OpenAI or Gemini; non-Bedrock models need an
+AgentCore API-key credential provider ARN, passed as a parameter), system prompt, MCP servers as `remote_mcp`
+tools and functions as `inline_function` tools. The execution role ARN is a template parameter (`role-required`).
+Memory is explicitly disabled unless the source enables it, because a harness creates a managed memory by default.
+Not translated, and reported: OpenAPI, knowledge-base, built-in and agent tools (`tool-unsupported`), guardrails,
+descriptions, MCP tool filters, per-call confirmation, and multi-agent wiring (each agent becomes a separate
+harness). The output is validated against AWS's published CloudFormation schema, and `deploy bedrock` can create it
+(same CloudFormation code; `-O role_arn=…` also fills `…ExecutionRoleArn`). A minimal agent was deployed for
+real once (see [docs/VERIFICATION.md](docs/VERIFICATION.md)), including the `bedrock-agentcore:*` permissions
+that `AmazonBedrockFullAccess` does not grant; tools and other providers were not. There is no `fetch` yet.
 
 The source format is autodetected; use `--from <platform>` if it is ambiguous. `agent-translator
 list-platforms` prints the available adapters.

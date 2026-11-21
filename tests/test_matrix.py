@@ -7,6 +7,7 @@ from agent_translator.report import Severity
 
 from .adk_helpers import roots as adk_roots
 from .adk_helpers import validate_agent_yaml
+from .agentcore_helpers import validate_template as validate_harness
 from .agentspec_helpers import AGENTS as AS_AGENTS
 from .agentspec_helpers import FIX as AS_FIX
 from .agentspec_helpers import validate as validate_agentspec
@@ -27,7 +28,7 @@ SOURCES = (
 )
 TARGETS = [("kagent", {"api_version": "v1alpha3"}), ("kagent", {"api_version": "v1alpha2"}),
            ("bedrock", {}), ("bedrock", {"format": "sdk"}), ("adk", {}), ("azure", {"format": "foundry"}),
-           ("azure", {"format": "agent-framework"}), ("agentspec", {})]
+           ("azure", {"format": "agent-framework"}), ("agentspec", {}), ("agentcore", {})]
 
 
 def sid(p):
@@ -42,6 +43,8 @@ def check_output(target, opts, out):
         validate_sdk_dir(out)
     elif target == "bedrock":
         validate_template(out / "template.yaml")
+    elif target == "agentcore":
+        validate_harness(out / "template.yaml")
     elif target == "adk":
         for f in out.rglob("*.yaml"):
             validate_agent_yaml(f)
@@ -79,7 +82,7 @@ def test_translate(src, dst, tmp_path):
     rep = ADAPTERS[target].emit(ir, tmp_path, opts)
     assert rep.worst < Severity.error, [i for i in rep.items if i.severity >= Severity.error]
     check_output(target, opts, tmp_path)
-    if opts.get("format") == "sdk":     # request files are write-only
+    if opts.get("format") == "sdk" or target == "agentcore":     # write-only outputs
         return
     back, brep = ADAPTERS[target].parse(main_file(target, opts, tmp_path))
     assert back.agents and brep.worst < Severity.error

@@ -43,6 +43,7 @@ bedrock = "agent_translator.adapters.bedrock:BedrockAdapter"
 adk = "agent_translator.adapters.adk:AdkAdapter"
 azure = "agent_translator.adapters.azure:AzureAdapter"
 agentspec = "agent_translator.adapters.agentspec:AgentSpecAdapter"
+agentcore = "agent_translator.adapters.agentcore:AgentCoreAdapter"
 
 [build-system]
 requires = ["hatchling"]

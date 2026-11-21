@@ -2,7 +2,7 @@
 
 Guidance for AI coding agents working in this repository. (`CLAUDE.md` is a symlink to this file.)
 
-`agent-translator` converts AI agent definitions between AWS Bedrock Agents, GCP ADK, Azure Foundry Agent Service and Kagent (Oracle Agent Spec as interchange) by going through a common IR. README.md is the user-facing doc; DESIGN.md holds the design decisions — read the relevant section before changing behavior. **Everything in this repository is written in English** (code, comments, docs, commit messages); the maintainer may talk to you in Spanish, but never add Spanish text to the repo.
+`agent-translator` converts AI agent definitions between AWS Bedrock Agents, GCP ADK, Azure Foundry Agent Service and Kagent (Oracle Agent Spec as interchange; Bedrock AgentCore as an emit-only target) by going through a common IR. README.md is the user-facing doc; DESIGN.md holds the design decisions — read the relevant section before changing behavior. **Everything in this repository is written in English** (code, comments, docs, commit messages); the maintainer may talk to you in Spanish, but never add Spanish text to the repo.
 
 ## Commands
 
@@ -40,6 +40,8 @@ Emit YAML only through `yamlio.new_yaml()`: it quotes strings that YAML 1.1 read
 - Deployers are create-only and dry-run by default: `plan()` is always computed and never changes anything; `apply()` runs only with `--apply` plus confirmation/`--yes`; existing objects/agents/stacks are errors, never overwritten; files with `REPLACE-WITH-…` placeholders are refused; Secrets are never created. Keep these invariants when editing — tests assert them (Stubber rejects un-queued AWS calls, the fake kubectl records every call).
 - ADK deploys by running Google's `adk deploy agent_engine` (never with `--agent_engine_id`); `google-adk[gcp]` is deliberately not a dependency, and the real service does not return an engine's source, so `fetch adk` is metadata-only. The fetcher/deployer are registered as platform `adk`, matching the adapter.
 - Bedrock deploys a CloudFormation stack from the emitted template (not the `format=sdk` request files).
+
+**AgentCore** (`adapters/agentcore/`) is emit-only: IR → CloudFormation `AWS::BedrockAgentCore::Harness`, validated in tests against the official schema in `fixtures/agentcore/schemas/`. It has no parser or fetch and no deployer of its own: `deploy bedrock` creates its stack (one minimal agent was deployed for real, 2026-11-21); see DESIGN.md "AgentCore target" and `docs/VERIFICATION.md`.
 
 **Bedrock specifics.** Inputs: CloudFormation `AWS::Bedrock::Agent`, or `GetAgent` API/CLI JSON (`bedrock/getagent.py` converts the camelCase API shape into the CFN-shaped template and reuses the same parser). `bedrock/sdk.py` renders `-O format=sdk` from the emitted CFN template into `NN-<Agent>-<op>.json` request files validated against botocore.
 

@@ -36,6 +36,9 @@ HOSTS = {
     "bedrock": Host(frozenset({"bedrock"}), ("bedrock",), ("anthropic",),
                     "recent Bedrock models may need a cross-region inference profile id "
                     "(prefix us./eu./apac./global.); set one if invoking the agent fails"),
+    "agentcore": Host(frozenset({"bedrock", "openai", "google"}), ("bedrock",), ("anthropic",),
+                      "recent Bedrock models may need a cross-region inference profile id "
+                      "(prefix us./eu./apac./global.)"),
     "kagent": Host(frozenset({"anthropic", "openai", "google"}),
                    ("anthropic", "openai", "google"), ("anthropic",)),
     "adk": Host(frozenset({"google", "vertex", "anthropic", "openai", "bedrock"}),

@@ -9,6 +9,7 @@ Legend: **real** = run against a live cloud/cluster; **fakes** = run in the test
 | Azure Foundry | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
 | AWS Bedrock | fakes only | fakes only (a real attempt on 2026-11-20 was blocked by AWS, see below) |
 | Kagent | **real** (once, 2026-11-17) + fakes | **real** (once, 2026-11-17) + fakes |
+| AWS Bedrock AgentCore | none (emit-only target) | **real** (once, 2026-11-21) through the Bedrock CloudFormation deployer; no fetch |
 | GCP ADK (Agent Engine) | **real** (once, 2026-11-18; metadata only, see below) + fakes | **real** (once, 2026-11-18) + fakes |
 
 ## Real test: `fetch kagent` and `deploy kagent` (2026-11-17)
@@ -75,6 +76,14 @@ No cloud call was made. The emitted ADK projects were loaded with the real `goog
 - So this is not a tool bug, but it means a real create/fetch round trip could not be run. The failed stack, the role and its policy were deleted; no agent was ever created, and nothing is left in the account.
 - Consequence: `fetch bedrock` and `deploy bedrock` only apply to accounts that already use Bedrock Agents Classic. Targeting AgentCore is not implemented.
 
+## Real test: `translate --to agentcore` + `deploy bedrock` (2026-11-21)
+
+- Same AWS account and region as the Bedrock attempt above (`eu-west-1`), a minimal agent (Nova Lite through the `eu.` inference profile, no tools), one execution role (trust `bedrock-agentcore.amazonaws.com`, only `bedrock:InvokeModel`) created for the test.
+- `translate --to agentcore`, then `deploy bedrock -O stack_name=… -O param.<Agent>ExecutionRoleArn=…` (dry run with `check=remote`, then `--apply --yes -O wait=true`): the stack reached `CREATE_COMPLETE`. `get-harness` returned status `READY` with the emitted model, system prompt and `memory: {disabled: {}}`; AWS added a runtime (`harness_<name>`), a 75-iteration / 3600 s default loop limit and summarization truncation. `delete-stack` removed the harness and its runtime (verified: no harnesses, runtime `ResourceNotFound`, no memories).
+- Permissions: `AmazonBedrockFullAccess` does NOT cover the `bedrock-agentcore` service. The first stack failed (rolled back, nothing left) on `bedrock-agentcore:CreateHarness`, the second on `CreateAgentRuntimeEndpoint`; the third passed with `Create/Get/Delete` on `Harness`, `HarnessEndpoint`, `AgentRuntime`, `AgentRuntimeEndpoint`, `Memory`, `WorkloadIdentity`, plus `List*` and `TagResource`, scoped to the region (granted to the test user and removed afterwards). `ListAgentRuntimes` stayed denied and was not needed.
+- No account allowlist applied: a corporate account with no Bedrock Agents Classic usage could create a harness.
+- Not covered: tools (`remote_mcp`, `inline_function`), model providers other than Bedrock, memory enabled, invoking the harness, `Hooks`/`Skills`, and any `fetch`. The `deploy bedrock` code is shared (a template with `AWS::BedrockAgentCore::Harness`), so it also has no AgentCore-specific consent or undo checks beyond the stack's.
+
 ## Tested with fakes only
 
 - `fetch adk` (`tests/test_adk_cloud.py`): `reasoningEngines.get` through a fake REST client; extraction of an inline source archive (path traversal and links refused; the real service does not return one), env-value redaction, pickled/Python-only engines reported as `manual`.
@@ -85,6 +94,7 @@ No cloud call was made. The emitted ADK projects were loaded with the real `goog
 
 ## Not verified
 
+- `translate --to agentcore`: besides the schema check on every fixture, only one minimal agent was deployed (see above); tools, other model providers and memory were not, and there is no `fetch` for AgentCore.
 - A successful real `deploy bedrock` (agent creation): only `ValidateTemplate` and the failure path (rollback, then stack deletion) were seen against real AWS.
 - Any real `fetch bedrock`: it needs an existing classic agent, which a new account can no longer create.
 - Kagent `v1alpha3` against a real cluster.
