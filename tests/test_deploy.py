@@ -294,3 +294,31 @@ def test_kagent_undo_carries_context_and_namespace(tmp_path):
                  "spec: {type: Declarative, declarative: {modelConfig: m, systemMessage: hi}}\n")
     pl, _ = dkagent.plan(f, {"namespace": "agtr-test", "context": "lab"}, client=lambda *a: (0, "", ""))
     assert pl.undo == "kubectl --context lab -n agtr-test delete agent a"
+
+
+HARNESS = """\
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  AExecutionRoleArn:
+    Type: String
+Resources:
+  AHarness:
+    Type: AWS::BedrockAgentCore::Harness
+    Properties:
+      HarnessName: my_probe
+      ExecutionRoleArn:
+        Ref: AExecutionRoleArn
+      Model:
+        BedrockModelConfig:
+          ModelId: eu.amazon.nova-lite-v1:0
+"""
+
+
+def test_bedrock_deployer_accepts_an_agentcore_template(tmp_path):
+    write(tmp_path, "template.yaml", HARNESS)
+    pl, _ = dbedrock.plan(tmp_path, {"role_arn": BOPTS["role_arn"]}, client=object())
+    assert pl.data["stack"] == "agtr-my-probe"
+    assert pl.data["params"] == [{"ParameterKey": "AExecutionRoleArn",
+                                  "ParameterValue": BOPTS["role_arn"]}]
+    assert pl.steps[-1].detail == "AWS::BedrockAgentCore::Harness"
+

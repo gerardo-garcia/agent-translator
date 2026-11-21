@@ -3,12 +3,13 @@
 A stack, rather than a chain of ``Create*`` calls, because it is atomic (``OnFailure=ROLLBACK``),
 resolves the ids that link agent, action groups and alias by itself, and is removed completely
 with ``aws cloudformation delete-stack``. Input: the CloudFormation template written by
-``translate --to bedrock`` (a file, or a directory with ``template.yaml``); the SDK-calls output
+``translate --to bedrock`` or ``--to agentcore`` (a file, or a directory with ``template.yaml``; the
+same code deploys both, there is no separate AgentCore deployer); the SDK-calls output
 (``-O format=sdk``) is not deployable here.
 
 Options: ``region``, ``profile``, ``stack_name`` (default ``agtr-<agent name>``),
 ``param.<Name>=value`` for any template parameter, shortcuts ``model=`` (every ``*FoundationModel``
-parameter) and ``role_arn=`` (every ``*AgentResourceRoleArn``), ``capabilities=CAPABILITY_IAM``
+parameter) and ``role_arn=`` (every ``*AgentResourceRoleArn`` or ``*ExecutionRoleArn``), ``capabilities=CAPABILITY_IAM``
 (required only if the template creates IAM resources), ``wait=true`` (block until the stack is
 created), ``check=remote`` (read-only ``ValidateTemplate`` + existence check in the dry run).
 An existing stack is an error; nothing is updated.
@@ -24,7 +25,8 @@ from ruamel.yaml import YAML
 from ..report import Report, Severity
 from . import Plan, Step, single_file
 
-SHORTCUTS = (("model", "FoundationModel"), ("role_arn", "AgentResourceRoleArn"))
+SHORTCUTS = (("model", "FoundationModel"), ("role_arn", "AgentResourceRoleArn"),
+             ("role_arn", "ExecutionRoleArn"))  # the AgentCore harness template
 
 
 def make_client(options: dict[str, str]):
@@ -85,8 +87,9 @@ def plan(path: Path, options: dict[str, str], client: Any = None) -> tuple[Plan 
         rep.add(Severity.error, "capabilities-required", ", ".join(iam),
                 "the template creates IAM resources; review them and pass -O capabilities=CAPABILITY_IAM")
     params = _parameters(tpl, options, rep)
-    agent = next((r["Properties"].get("AgentName") for r in res.values()
-                  if r.get("Type") == "AWS::Bedrock::Agent"), None)
+    agent = next((r["Properties"].get("AgentName") or r["Properties"].get("HarnessName")
+                  for r in res.values()
+                  if r.get("Type") in ("AWS::Bedrock::Agent", "AWS::BedrockAgentCore::Harness")), None)
     base = re.sub(r"[^A-Za-z0-9-]+", "-", str(agent or "agent")).strip("-")
     stack = options.get("stack_name") or (base if base.startswith("agtr-") else f"agtr-{base}")
     if rep.worst >= Severity.error:
