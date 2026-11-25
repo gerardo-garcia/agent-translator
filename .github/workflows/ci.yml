@@ -53,3 +53,14 @@ jobs:
       - run: >
           uv run --locked --all-extras --with "google-adk[extensions]" --with mcp
           pytest -q tests/test_adk_real_loader.py
+
+  langgraph-loader:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+      - run: >
+          uv run --locked --all-extras --with langgraph --with langchain
+          --with langchain-mcp-adapters pytest -q tests/test_langgraph_real_loader.py

@@ -1,7 +1,7 @@
 # agent-translator
 
 Translate AI agent definitions between platforms: **AWS Bedrock Agents**, **GCP ADK**, **Azure Foundry
-Agent Service** and **Kagent**, with Oracle Agent Spec as an interchange format and Amazon Bedrock AgentCore as an output-only target. Every translation goes
+Agent Service** and **Kagent**, with Oracle Agent Spec as an interchange format and Amazon Bedrock AgentCore and LangGraph as output-only targets. Every translation goes
 through a common intermediate representation (IR), so N platforms need 2N adapters instead of N·(N-1)
 translators, and anything that cannot be translated exactly is **reported, never dropped silently**.
 
@@ -33,6 +33,7 @@ uv run agent-translator --help
 | Azure Foundry | `azure.yaml` prompt agents, Agent Framework `kind: Prompt` | same (`-O format=foundry\|agent-framework`, default foundry) |
 | Oracle Agent Spec | `Agent`, `ManagerWorkers`, `Swarm` YAML/JSON (flows are reported, not translated) | same |
 | AWS Bedrock AgentCore | — (emit-only) | CloudFormation `AWS::BedrockAgentCore::Harness`, one harness per agent (`--to agentcore`) |
+| LangGraph | — (emit-only) | Python project: `graph.py`, `langgraph.json`, `requirements.txt` (`--to langgraph`) |
 
 **AgentCore (emit-only).** AWS closed Bedrock Agents Classic to new accounts on 2026-07-30 and recommends
 [AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/). `--to agentcore` writes a CloudFormation template
@@ -46,6 +47,21 @@ harness). The output is validated against AWS's published CloudFormation schema,
 (same CloudFormation code; `-O role_arn=…` also fills `…ExecutionRoleArn`). A minimal agent was deployed for
 real once (see [docs/VERIFICATION.md](docs/VERIFICATION.md)), including the `bedrock-agentcore:*` permissions
 that `AmazonBedrockFullAccess` does not grant; tools and other providers were not. There is no `fetch` yet.
+
+**LangGraph (emit-only).** A LangGraph agent is Python code, so there is nothing reliable to read back and no
+remote agent object to fetch or deploy. `--to langgraph` writes a self-contained `graph.py` per root agent (plus
+`langgraph.json`, `requirements.txt`, `.env.example` and a `README.md` with the run steps): each LLM agent is `langchain.agents.create_agent` with the model as an
+`init_chat_model("provider:id")` string (Anthropic, OpenAI, Gemini or Bedrock Converse) and the system prompt;
+MCP servers become `langchain-mcp-adapters` tools (this makes `graph.py` expose an async `make_graph()` factory);
+a supervisor's sub-agents become tools that call them; sequential and parallel workflow agents become a
+`StateGraph`. Function, knowledge-base and OpenAPI tools are generated as stubs to implement
+(`function-stub-generated`, manual). Reported as lossy: handoff (emitted as supervisor), loops (one pass),
+guardrails, per-call confirmation, memory TTL (`memory-checkpointer`), built-in tools (dropped). The generated
+module is loaded with the real `langgraph` in `tests/test_langgraph_real_loader.py`.
+
+To run it: `pip install -r requirements.txt "langgraph-cli[inmem]"`, copy `.env.example` to `.env`, then `langgraph dev`
+(local API on `localhost:2024`, no Docker). The generated `README.md` repeats this. The official server in Kubernetes
+is a separate matter: see DESIGN.md "LangGraph target" for the licence situation.
 
 The source format is autodetected; use `--from <platform>` if it is ambiguous. `agent-translator
 list-platforms` prints the available adapters.

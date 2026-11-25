@@ -44,6 +44,7 @@ adk = "agent_translator.adapters.adk:AdkAdapter"
 azure = "agent_translator.adapters.azure:AzureAdapter"
 agentspec = "agent_translator.adapters.agentspec:AgentSpecAdapter"
 agentcore = "agent_translator.adapters.agentcore:AgentCoreAdapter"
+langgraph = "agent_translator.adapters.langgraph:LangGraphAdapter"
 
 [build-system]
 requires = ["hatchling"]

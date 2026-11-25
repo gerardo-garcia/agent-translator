@@ -16,6 +16,7 @@ from .bedrock_helpers import FIX as BFIX
 from .bedrock_helpers import validate_sdk_dir, validate_template
 from .conftest import validate_against_crds
 from .kagent_helpers import agent_fixtures
+from .langgraph_helpers import validate_project as validate_langgraph
 
 ADAPTERS = load_adapters()
 SOURCES = (
@@ -28,7 +29,7 @@ SOURCES = (
 )
 TARGETS = [("kagent", {"api_version": "v1alpha3"}), ("kagent", {"api_version": "v1alpha2"}),
            ("bedrock", {}), ("bedrock", {"format": "sdk"}), ("adk", {}), ("azure", {"format": "foundry"}),
-           ("azure", {"format": "agent-framework"}), ("agentspec", {}), ("agentcore", {})]
+           ("azure", {"format": "agent-framework"}), ("agentspec", {}), ("agentcore", {}), ("langgraph", {})]
 
 
 def sid(p):
@@ -45,6 +46,8 @@ def check_output(target, opts, out):
         validate_template(out / "template.yaml")
     elif target == "agentcore":
         validate_harness(out / "template.yaml")
+    elif target == "langgraph":
+        validate_langgraph(out)
     elif target == "adk":
         for f in out.rglob("*.yaml"):
             validate_agent_yaml(f)
@@ -82,7 +85,7 @@ def test_translate(src, dst, tmp_path):
     rep = ADAPTERS[target].emit(ir, tmp_path, opts)
     assert rep.worst < Severity.error, [i for i in rep.items if i.severity >= Severity.error]
     check_output(target, opts, tmp_path)
-    if opts.get("format") == "sdk" or target == "agentcore":     # write-only outputs
+    if opts.get("format") == "sdk" or target in ("agentcore", "langgraph"):     # write-only outputs
         return
     back, brep = ADAPTERS[target].parse(main_file(target, opts, tmp_path))
     assert back.agents and brep.worst < Severity.error
