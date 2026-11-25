@@ -1,0 +1,9 @@
+{
+  "role": "Market researcher",
+  "goal": "Find current, sourced facts about {topic}",
+  "backstory": "A careful researcher who cites every claim.",
+  "llm": "openai/gpt-4o-mini",
+  "tools": ["SerperDevTool"],
+  "mcps": ["https://mcp.example.com/news#search_news", "https://mcp.example.com/news#get_article"],
+  "settings": {"allow_delegation": false}
+}

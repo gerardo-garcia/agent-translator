@@ -1,7 +1,7 @@
 # agent-translator
 
 Translate AI agent definitions between platforms: **AWS Bedrock Agents**, **GCP ADK**, **Azure Foundry
-Agent Service** and **Kagent**, with Oracle Agent Spec as an interchange format and Amazon Bedrock AgentCore and LangGraph as output-only targets. Every translation goes
+Agent Service** and **Kagent**, with Oracle Agent Spec as an interchange format and CrewAI as a read/write platform, and Amazon Bedrock AgentCore and LangGraph as output-only targets. Every translation goes
 through a common intermediate representation (IR), so N platforms need 2N adapters instead of N·(N-1)
 translators, and anything that cannot be translated exactly is **reported, never dropped silently**.
 
@@ -33,6 +33,7 @@ uv run agent-translator --help
 | Azure Foundry | `azure.yaml` prompt agents, Agent Framework `kind: Prompt` | same (`-O format=foundry\|agent-framework`, default foundry) |
 | Oracle Agent Spec | `Agent`, `ManagerWorkers`, `Swarm` YAML/JSON (flows are reported, not translated) | same |
 | AWS Bedrock AgentCore | — (emit-only) | CloudFormation `AWS::BedrockAgentCore::Harness`, one harness per agent (`--to agentcore`) |
+| CrewAI | JSON crew projects (`crew.jsonc` + `agents/*.jsonc`), standalone `agent.yaml`/`agent.json`, classic `config/agents.yaml` + `tasks.yaml` (Python is not read) | JSON crew project with `tools/*.py` stubs (`--to crewai`) |
 | LangGraph | — (emit-only) | Python project: `graph.py`, `langgraph.json`, `requirements.txt` (`--to langgraph`) |
 
 **AgentCore (emit-only).** AWS closed Bedrock Agents Classic to new accounts on 2026-07-30 and recommends

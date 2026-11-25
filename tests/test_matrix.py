@@ -15,6 +15,8 @@ from .azure_helpers import FOUNDRY, FRAMEWORK, validate_foundry, validate_framew
 from .bedrock_helpers import FIX as BFIX
 from .bedrock_helpers import validate_sdk_dir, validate_template
 from .conftest import validate_against_crds
+from .crewai_helpers import SOURCES as CREW_SOURCES
+from .crewai_helpers import validate_project as validate_crewai
 from .kagent_helpers import agent_fixtures
 from .langgraph_helpers import validate_project as validate_langgraph
 
@@ -26,10 +28,11 @@ SOURCES = (
     + [("adk", f) for f in adk_roots() if "loop_config" not in str(f) or "multi_agent" in str(f)]
     + [("azure", f) for f in FOUNDRY + FRAMEWORK]
     + [("agentspec", AS_FIX / f"{n}.yaml") for n in AS_AGENTS]
+    + [("crewai", f) for f in CREW_SOURCES]
 )
 TARGETS = [("kagent", {"api_version": "v1alpha3"}), ("kagent", {"api_version": "v1alpha2"}),
            ("bedrock", {}), ("bedrock", {"format": "sdk"}), ("adk", {}), ("azure", {"format": "foundry"}),
-           ("azure", {"format": "agent-framework"}), ("agentspec", {}), ("agentcore", {}), ("langgraph", {})]
+           ("azure", {"format": "agent-framework"}), ("agentspec", {}), ("agentcore", {}), ("langgraph", {}), ("crewai", {})]
 
 
 def sid(p):
@@ -46,6 +49,8 @@ def check_output(target, opts, out):
         validate_template(out / "template.yaml")
     elif target == "agentcore":
         validate_harness(out / "template.yaml")
+    elif target == "crewai":
+        validate_crewai(out)
     elif target == "langgraph":
         validate_langgraph(out)
     elif target == "adk":
@@ -63,6 +68,8 @@ def check_output(target, opts, out):
 
 
 def main_file(target, opts, out):
+    if target == "crewai":
+        return next(out.rglob("crew.jsonc"))
     if target == "adk":
         return next(out.rglob("root_agent.yaml"))
     return next(iter(sorted(out.glob("*.yaml"))))

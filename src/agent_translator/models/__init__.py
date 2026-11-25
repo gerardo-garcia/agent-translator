@@ -45,6 +45,8 @@ HOSTS = {
                 ("google", "vertex", "anthropic", "openai"), ("google",)),
     "langgraph": Host(frozenset({"anthropic", "openai", "google", "bedrock"}),
                       ("anthropic", "openai", "google"), ("anthropic",)),
+    "crewai": Host(frozenset({"anthropic", "openai", "google", "bedrock", "azure", "vertex"}),
+                   ("anthropic", "openai", "google"), ("anthropic",)),
     "azure": Host(frozenset({"azure", "openai"}), ("azure",), ("openai",),
                   "the Foundry `model` is a deployment name: create a deployment with this name"),
     "agentspec": Host(frozenset({"openai", "google", "anthropic"}),

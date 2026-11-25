@@ -1,0 +1,15 @@
+{
+  "name": "market_brief",
+  "agents": ["researcher", "analyst"],
+  "tasks": [
+    {
+      "name": "brief_task",
+      "description": "Produce a market brief about {topic}.",
+      "expected_output": "A brief with findings, risks and a recommendation."
+    }
+  ],
+  "process": "hierarchical",
+  "manager_llm": "openai/gpt-4o",
+  "memory": true,
+  "inputs": {"topic": "edge AI accelerators"}
+}

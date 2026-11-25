@@ -1,0 +1,23 @@
+{
+  // Synthetic fixture, shaped after crewai_cli/templates/json_crew
+  "name": "support_triage",
+  "agents": ["classifier", "responder"],
+  "tasks": [
+    {
+      "name": "classify_task",
+      "description": "Classify the support ticket: {ticket}",
+      "expected_output": "One category (billing, access or bug) with a one-line reason.",
+      "agent": "classifier"
+    },
+    {
+      "name": "reply_task",
+      "description": "Write a short, polite reply to the customer for ticket {ticket}.",
+      "expected_output": "A reply of at most 120 words.",
+      "agent": "responder",
+      "context": ["classify_task"]
+    }
+  ],
+  "process": "sequential",
+  "memory": false,
+  "inputs": {"ticket": "I cannot sign in to my account"},
+}

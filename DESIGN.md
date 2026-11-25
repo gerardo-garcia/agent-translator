@@ -346,3 +346,25 @@ Revisit if this changes: Agent Spec adding memory/KB/guardrails or LLM configura
 - **Tests**: `tests/test_langgraph.py` checks the generated source; the matrix runs every fixture through the target. `tests/test_langgraph_real_loader.py` loads the emitted modules with real `langgraph`/`langchain` and a fake chat model (so no keys or network), checking nodes, edges and that sequential/parallel graphs and supervisor tools run. It needs `uv run --all-extras --with langgraph --with langchain --with langchain-mcp-adapters` (CI job `langgraph-loader`; langchain is not added to the lock). Verified once against a real model (2026-11-25): a supervisor + sub-agent project with a hand-implemented `add` stub ran through the lab's agentgateway (vLLM `qwen3-8`, Anthropic Messages API; `langchain-anthropic` reads the gateway from `ANTHROPIC_API_URL` and the token from `ANTHROPIC_API_KEY`): the supervisor called `call_calc`, the sub-agent called `add`, and the answer was correct. **Not verified against the official LangGraph server in Kubernetes.**
 - **Running it** (checked 2026-11-25 with `langgraph-cli[inmem]`, Python 3.12): `langgraph dev` loads the generated project with no LangSmith key (`LANGSMITH_TRACING=false`, `LANGGRAPH_CLI_NO_ANALYTICS=1`), lists the graph as an assistant named after the root agent, and a run reached the model (it failed only because the key was fake). It needs Python >= 3.11. The emitter also writes `.env.example` (one variable per provider used, `AGENT_MODEL` when the source has no model) and a `README.md` with these steps.
 - **Self-hosting the official server** (web search, 2026-11-25; not tested by us): the docs describe a standalone server that reads `LANGGRAPH_CLOUD_LICENSE_KEY` and needs a LangSmith API key plus Postgres and Redis, with a Helm chart for Kubernetes. Sources disagree on whether a free tier may self-host it (the FAQ lists "free self-hosted", third parties say Enterprise licence). Confirm with LangChain before deploying it in a shared cluster; for a lab, `langgraph dev` or wrapping `graph.py` in a small service avoids the question. There is deliberately no LangGraph `deploy`.
+
+## CrewAI adapter (M10) — decisions
+
+- **Formats.** Read: JSON crew projects (`crew.jsonc` + `agents/*.jsonc`), standalone `agent.yaml/json`,
+  classic `config/agents.yaml` + `tasks.yaml`. The classic Python `crew.py` is never executed or read
+  (`python-config-not-read`). Declarative flows (`crewai.flow/v1`) are not agents and are not detected.
+  Written: the JSON crew project, validated with CrewAI's own `json_loader` in `tests/test_crewai_real_loader.py`.
+- **No IR changes.** A crew has agents *and tasks*; the IR has agents only. A sequential crew becomes a root
+  workflow agent (mode `sequential`) over its agents; a hierarchical crew becomes a supervisor (the
+  `manager_agent`, or a synthesized one for `manager_llm`). Each agent's task text is folded into its
+  instructions (`compose`: role, backstory, goal, task, expected output).
+- **Lossless round trip.** Persona, tasks, settings and unknown crew keys are kept in `extensions.crewai`.
+  The emitter restores them only when the instructions still equal the composed text; otherwise it
+  derives role/goal/backstory from the IR and synthesizes tasks (`task-synthesized`).
+- **Models** are LiteLLM strings (`provider/model`); `HOSTS["crewai"]` allows all providers. Unknown ids are
+  `manual` (`model-unmapped`). A hierarchical crew always needs a manager model: borrowed from a worker, else
+  a flagged placeholder.
+- **Not translated:** run-time delegation (`allow_delegation`), apps, knowledge sources, skills, A2A, headers
+  of MCP servers (possible credentials), per-tool confirmation. Function/knowledge/OpenAPI tools become
+  `tools/<name>.py` BaseTool stubs reported as `manual`.
+- **Licensing.** `crewAI-examples` has no license, so no file from it is copied; fixtures are synthetic or
+  from the MIT `crewai` package (`fixtures/crewai/SOURCES.md`).

@@ -54,6 +54,17 @@ jobs:
           uv run --locked --all-extras --with "google-adk[extensions]" --with mcp
           pytest -q tests/test_adk_real_loader.py
 
+  crewai-loader:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+      - run: >
+          uv run --locked --all-extras --with crewai --with crewai-tools
+          pytest -q tests/test_crewai_real_loader.py
+
   langgraph-loader:
     runs-on: ubuntu-24.04
     steps:
