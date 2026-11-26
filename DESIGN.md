@@ -194,6 +194,8 @@ Python ≥ 3.11 · pydantic v2 · ruamel.yaml (preserves comments) · Jinja2 (co
 | M7 ✅ | `deploy` (Kagent, Azure, Bedrock via CloudFormation), dry run by default |
 | M8 ✅ | `agentcore` target (emit-only, CloudFormation `AWS::BedrockAgentCore::Harness`) |
 | M9 ✅ | `langgraph` target (emit-only, Python project) |
+| M10 ✅ | `crewai` adapter (read and write JSON crew projects) |
+| M11 ✅ | `llamaindex` target (emit-only, Python project) |
 
 ## 10. Decisions taken
 
@@ -388,3 +390,18 @@ Revisit if this changes: Agent Spec adding memory/KB/guardrails or LLM configura
   and calls `build()` (agents are validated by LlamaIndex). Modules with MCP tools or `GoogleGenAI` are
   skipped there because constructing them opens a network connection. A run against a real model has
   not been done.
+
+## Platforms evaluated and not implemented (2026-11-26)
+
+- **Langflow**: a flow is a visual graph (nodes/edges with embedded component code), not an agent
+  definition; only the `Agent` node would map, and writing a valid flow back is fragile. Declined.
+- **AutoGen**: in maintenance mode; Microsoft Agent Framework, its successor, is covered by Azure
+  `format=agent-framework`.
+- **OpenShift Lightspeed**: `OLSConfig` (`ols.openshift.io/v1alpha1`) configures the assistant (LLM
+  provider, RAG, MCP servers); it has no per-agent instructions, sub-agents or tools. Its `mcpServers`
+  schema changed between operator 1.0.9 and 1.0.10 and the feature is in preview. Possible future
+  piece: generate the `mcpServers` fragment from the IR's MCP servers once the schema is stable.
+- **Red Hat OpenShift AI / Llama Stack**: agents are created through the `/v1alpha/agents` API
+  against a server configured by `run.yaml` / `LlamaStackDistribution`; there is no declarative
+  per-agent file. A possible emit-only target (a Python script using the client) if agents are ever
+  run there; deferred because the API is still `v1alpha`.
