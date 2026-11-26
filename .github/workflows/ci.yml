@@ -65,6 +65,19 @@ jobs:
           uv run --locked --all-extras --with crewai --with crewai-tools
           pytest -q tests/test_crewai_real_loader.py
 
+  llamaindex-loader:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+      - run: >
+          uv run --locked --all-extras --with llama-index-core
+          --with llama-index-llms-anthropic --with llama-index-llms-openai
+          --with llama-index-llms-google-genai --with llama-index-llms-bedrock-converse
+          --with llama-index-tools-mcp pytest -q tests/test_llamaindex_real_loader.py
+
   langgraph-loader:
     runs-on: ubuntu-24.04
     steps:

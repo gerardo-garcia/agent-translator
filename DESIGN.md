@@ -368,3 +368,23 @@ Revisit if this changes: Agent Spec adding memory/KB/guardrails or LLM configura
   `tools/<name>.py` BaseTool stubs reported as `manual`.
 - **Licensing.** `crewAI-examples` has no license, so no file from it is copied; fixtures are synthetic or
   from the MIT `crewai` package (`fixtures/crewai/SOURCES.md`).
+
+## LlamaIndex target (M11) — decisions
+
+- **Emit-only**, for the same reason as LangGraph: an agent is Python code (`FunctionAgent`), so there is
+  no declarative document to parse, fetch or deploy.
+- **Mapping.** LLM agent → `FunctionAgent`. A supervisor/router/handoff agent with sub-agents → an
+  `AgentWorkflow` where the parent `can_handoff_to` the children (and children back to the parent unless
+  the mode is `handoff`): this is a real handoff, not a tool call (`supervisor-as-handoff`, warning).
+  Sequential/parallel/loop → a small `Pipeline` class emitted in the module (loop is one pass,
+  parallel outputs are concatenated: both `lossy`). A workflow nested below another agent is flattened
+  into its parent (`workflow-flattened`). `agent` tools become `FunctionTool`s that run the other agent.
+- **Models.** `HOSTS["llamaindex"]`: Anthropic, OpenAI, GoogleGenAI and BedrockConverse (the LLM
+  classes accept only the params they have; the rest are `param-dropped`). A missing or unknown model
+  is `manual`: the agent is emitted without `llm=` so `Settings.llm` applies.
+- **Tools.** Function/knowledge/OpenAPI → stubs (`manual`), MCP → `McpToolSpec(BasicMCPClient(url))`
+  fetched in `build()`, filtered by tool name; headers are never copied.
+- **Verification.** The real-loader test imports every emitted module with the real `llama-index`
+  and calls `build()` (agents are validated by LlamaIndex). Modules with MCP tools or `GoogleGenAI` are
+  skipped there because constructing them opens a network connection. A run against a real model has
+  not been done.

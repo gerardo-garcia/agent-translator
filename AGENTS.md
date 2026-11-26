@@ -2,7 +2,7 @@
 
 Guidance for AI coding agents working in this repository. (`CLAUDE.md` is a symlink to this file.)
 
-`agent-translator` converts AI agent definitions between AWS Bedrock Agents, GCP ADK, Azure Foundry Agent Service and Kagent and CrewAI (Oracle Agent Spec as interchange; Bedrock AgentCore and LangGraph as emit-only targets) by going through a common IR. README.md is the user-facing doc; DESIGN.md holds the design decisions — read the relevant section before changing behavior. **Everything in this repository is written in English** (code, comments, docs, commit messages); the maintainer may talk to you in Spanish, but never add Spanish text to the repo.
+`agent-translator` converts AI agent definitions between AWS Bedrock Agents, GCP ADK, Azure Foundry Agent Service and Kagent and CrewAI (Oracle Agent Spec as interchange; Bedrock AgentCore, LangGraph and LlamaIndex as emit-only targets) by going through a common IR. README.md is the user-facing doc; DESIGN.md holds the design decisions — read the relevant section before changing behavior. **Everything in this repository is written in English** (code, comments, docs, commit messages); the maintainer may talk to you in Spanish, but never add Spanish text to the repo.
 
 ## Commands
 
@@ -44,6 +44,8 @@ Emit YAML only through `yamlio.new_yaml()`: it quotes strings that YAML 1.1 read
 **AgentCore** (`adapters/agentcore/`) is emit-only: IR → CloudFormation `AWS::BedrockAgentCore::Harness`, validated in tests against the official schema in `fixtures/agentcore/schemas/`. It has no parser or fetch and no deployer of its own: `deploy bedrock` creates its stack (one minimal agent was deployed for real, 2026-11-21); see DESIGN.md "AgentCore target" and `docs/VERIFICATION.md`.
 
 **CrewAI** (`adapters/crewai/`) reads JSON crew projects, standalone agents and classic `config/*.yaml` (never the Python) and writes a JSON crew project; original persona/tasks/crew keys live in `extensions.crewai` and are restored only if the instructions are unchanged. See DESIGN.md "CrewAI adapter".
+
+**LlamaIndex** (`adapters/llamaindex/`) is emit-only like LangGraph: IR → `agent.py` per root (`FunctionAgent`, `AgentWorkflow` for supervisors, a small `Pipeline` for sequential/parallel) + `requirements.txt`; real-loader test `tests/test_llamaindex_real_loader.py` (CI job `llamaindex-loader`, command in its docstring); see DESIGN.md "LlamaIndex target".
 
 **LangGraph** (`adapters/langgraph/`) is emit-only too: IR → a Python project (`graph.py`, `langgraph.json`, `requirements.txt`); agents are code, so there is no parser, fetch or deploy. Tool stubs the user must implement are reported as `manual`; see DESIGN.md "LangGraph target".
 

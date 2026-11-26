@@ -45,6 +45,8 @@ HOSTS = {
                 ("google", "vertex", "anthropic", "openai"), ("google",)),
     "langgraph": Host(frozenset({"anthropic", "openai", "google", "bedrock"}),
                       ("anthropic", "openai", "google"), ("anthropic",)),
+    "llamaindex": Host(frozenset({"anthropic", "openai", "google", "bedrock"}),
+                      ("anthropic", "openai", "google"), ("anthropic",)),
     "crewai": Host(frozenset({"anthropic", "openai", "google", "bedrock", "azure", "vertex"}),
                    ("anthropic", "openai", "google"), ("anthropic",)),
     "azure": Host(frozenset({"azure", "openai"}), ("azure",), ("openai",),

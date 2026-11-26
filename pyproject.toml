@@ -46,6 +46,7 @@ agentspec = "agent_translator.adapters.agentspec:AgentSpecAdapter"
 agentcore = "agent_translator.adapters.agentcore:AgentCoreAdapter"
 langgraph = "agent_translator.adapters.langgraph:LangGraphAdapter"
 crewai = "agent_translator.adapters.crewai:CrewAIAdapter"
+llamaindex = "agent_translator.adapters.llamaindex:LlamaIndexAdapter"
 
 [build-system]
 requires = ["hatchling"]
