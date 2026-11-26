@@ -388,8 +388,14 @@ Revisit if this changes: Agent Spec adding memory/KB/guardrails or LLM configura
   fetched in `build()`, filtered by tool name; headers are never copied.
 - **Verification.** The real-loader test imports every emitted module with the real `llama-index`
   and calls `build()` (agents are validated by LlamaIndex). Modules with MCP tools or `GoogleGenAI` are
-  skipped there because constructing them opens a network connection. A run against a real model has
-  not been done.
+  skipped there because constructing them opens a network connection. Verified once against a real model
+  (2026-11-26): a supervisor + sub-agent project with a hand-implemented `add` stub ran through the
+  lab's agentgateway (vLLM `qwen3-8`, Anthropic Messages API): the supervisor handed off to the
+  sub-agent, which called `add`, and the answer was correct. Findings: `llama-index-llms-anthropic`
+  0.13.0 sends `temperature`, which `anthropic>=1` no longer accepts in `messages.create()`, so the
+  emitted `requirements.txt` pins `anthropic<1`; and the class only knows Claude model names
+  (context size, function-calling check), so a non-Claude model behind an Anthropic-compatible
+  gateway needs those two checks patched (done only in the scratch run, not in generated code).
 
 ## Platforms evaluated and not implemented (2026-11-26)
 

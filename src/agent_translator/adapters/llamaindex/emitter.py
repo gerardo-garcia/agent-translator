@@ -408,7 +408,12 @@ def emit_project(ir: AgentIR, rep: Report) -> dict[str, str]:
         stubs |= bool(m.stubs)
         mcp |= bool(m.pre)
     files[".env.example"] = env_example(env)
-    files["requirements.txt"] = "\n".join(sorted(packages)) + "\n"
+    reqs = sorted(packages)
+    if "llama-index-llms-anthropic" in packages:
+        # llama-index-llms-anthropic 0.13 sends `temperature`, which anthropic>=1 removed from
+        # messages.create(): the agent would fail on its first call (checked 2026-11-26)
+        reqs.append("anthropic<1")
+    files["requirements.txt"] = "\n".join(reqs) + "\n"
     nomodel = any(i.code in ("model-required", "model-unmapped") for i in rep.items)
     files["README.md"] = readme([f for f in files if f.endswith(".py")], stubs, mcp, nomodel)
     return files

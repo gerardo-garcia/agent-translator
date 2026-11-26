@@ -47,7 +47,8 @@ def test_single_agent(tmp_path):
     assert "FunctionAgent(" in src and "AgentWorkflow" not in src
     assert "llm=Anthropic(model='claude-sonnet-4-5', temperature=0.2)" in src
     assert "param-dropped" in {i.code for i in rep.items}
-    assert "llama-index-llms-anthropic" in (tmp_path / "requirements.txt").read_text()
+    reqs = (tmp_path / "requirements.txt").read_text().split()
+    assert "llama-index-llms-anthropic" in reqs and "anthropic<1" in reqs
     assert "ANTHROPIC_API_KEY" in (tmp_path / ".env.example").read_text()
 
 
